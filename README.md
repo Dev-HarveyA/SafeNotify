@@ -31,7 +31,9 @@ If there is no installer under **Assets**, a release has not finished building y
 ## Try SafeNotify on one computer
 
 1. Install the .NET 10 SDK and open PowerShell in the repository folder.
-2. Start the server:
+2. Double-click `Start-Server.bat` in the repository folder. A console window shows the server status. Leave that window open while using SafeNotify. To stop it, press **Ctrl+C** in the server window, or double-click `Stop-Server.bat`.
+
+   You can also start it from PowerShell:
 
    ```powershell
    .\scripts\Start-Server.ps1
@@ -78,21 +80,18 @@ The installer is unsigned. Windows may show a SmartScreen warning. Sign installe
 
 ## Use SafeNotify across a LAN
 
-The server binds to `127.0.0.1` by default. LAN mode is controlled from **Dashboard → Settings → LAN access**. Before enabling it, configure a trusted HTTPS certificate for the server name or IP address, and install its issuing certificate chain on each client computer. The dashboard then adds a Windows Firewall rule limited to the local subnet and Private or Domain network profiles, binds the server to the LAN, and restarts it. It displays the HTTPS address and port for approved users on the same Wi-Fi/LAN.
+The server binds to `127.0.0.1` by default. To set up a small LAN, connect the server and client computers to the same Wi-Fi or Ethernet network, then open **Dashboard → Settings → LAN access** and select **Set up LAN automatically**. Confirm the prompt to create and trust a local certificate authority for your Windows account. SafeNotify creates a server HTTPS certificate for the current network addresses, configures LAN mode, and adds a Windows Firewall rule limited to the local subnet and Private or Domain networks. Approve the Windows Firewall prompt when it appears. The dashboard then opens at its HTTPS address.
 
-1. Obtain a certificate from your organisation's certificate authority. Its subject alternative name must match the server name or IP address clients will use.
-2. Install the certificate and private key in the server user's **Current User → Personal** certificate store. Set `SafeNotify:CertificateThumbprint` in the server configuration.
-3. Open **Settings → LAN access** and select **Enable LAN access**. Approve the Windows Firewall prompt. The server restarts automatically.
-4. Give approved users the HTTPS address and port shown in the dashboard. Their devices must be connected to the same organisation Wi-Fi/LAN.
-5. In each client, enter the HTTPS address, find the organisation, and request to join. Approve each new device in **Device requests**.
+SafeNotify downloads `SafeNotify-LAN.cer`. The server trusts the certificate for the current Windows user. Install the public certificate on each client computer:
 
-For a development run from source, the server script can load a PFX file and prompt for its password without saving it in the repository:
+1. Open the downloaded `.cer` file.
+2. Select **Current User** when Windows asks where to install it.
+3. Choose **Place all certificates in the following store**, select **Trusted Root Certification Authorities**, and finish the wizard.
+4. Open the HTTPS address shown by SafeNotify. In the client, enter the same address, find the organisation, and request to join. Approve the request in **Device requests**.
 
-```powershell
-.\scripts\Start-Server.ps1 -BindAddress 192.168.1.20 -Port 5080 -CertificatePath C:\SafeNotify\certificates\server.pfx
-```
+The certificate contains no private key. Never share the server's private key or upload it to GitHub. A self-signed certificate is for a controlled LAN; each Windows user must explicitly trust its public certificate. Reserve the server's IP address in the router so the certificate and connection address remain valid. To turn LAN access off, use the LAN access control in Settings. SafeNotify removes its firewall rule, returns to loopback binding, and restarts. Do not expose the dashboard to the internet.
 
-To turn LAN access off, use the same dashboard control. SafeNotify removes its firewall rule, returns to loopback binding, and restarts. The server refuses non-loopback HTTP. The client validates Windows TLS certificates normally. Do not expose the dashboard to the internet. The LAN address can change if the router assigns a different IP; configure a DHCP reservation if the address needs to remain stable.
+For a workplace deployment, use a certificate from your organisation's certificate authority instead. Install the certificate and private key in the server user's **Current User → Personal** certificate store, and install the issuing certificate chain on each client computer.
 
 ## Troubleshooting
 
@@ -133,6 +132,7 @@ To create self-contained Windows x64 application files, run `.\scripts\Publish.p
 | `src/SafeNotify.Client` | WPF Windows client and alert windows |
 | `tests/SafeNotify.Server.Tests` | Server API workflow tests |
 | `scripts` | Development launchers, data migration, publishing, and installer build |
+| `Start-Server.bat`, `Stop-Server.bat` | Start and stop the source server on Windows |
 | `config` | Example configuration |
 | `docs` | Architecture notes |
 | `.github/workflows` | Windows build and test workflow |
