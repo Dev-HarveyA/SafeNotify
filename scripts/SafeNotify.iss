@@ -1,5 +1,5 @@
 #ifndef AppVersion
-#define AppVersion "1.0.3"
+#define AppVersion "1.0.4"
 #endif
 
 [Setup]
@@ -59,8 +59,8 @@ Filename: "{app}\client\SafeNotify.Client.exe"; Description: "Launch SafeNotify 
 Filename: "{app}\server\SafeNotify.Server.exe"; Description: "Launch SafeNotify Server"; WorkingDir: "{app}\server"; Flags: postinstall nowait skipifsilent; Components: server
 
 [UninstallRun]
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM SafeNotify.Client.exe"; Flags: runhidden
-Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM SafeNotify.Server.exe"; Flags: runhidden
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM SafeNotify.Client.exe"; Flags: runhidden; RunOnceId: "StopSafeNotifyClient"
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM SafeNotify.Server.exe"; Flags: runhidden; RunOnceId: "StopSafeNotifyServer"
 
 [UninstallDelete]
 Type: dirifempty; Name: "{userprograms}\SafeNotify"
@@ -86,13 +86,19 @@ begin
   ServerInfoMemo.Color := WizardForm.Color;
   ServerInfoMemo.TabStop := False;
   ServerInfoMemo.Lines.Add('Server program location:');
-  ServerInfoMemo.Lines.Add(ExpandConstant('{app}') + '\server\SafeNotify.Server.exe');
+  ServerInfoMemo.Lines.Add('');
   ServerInfoMemo.Lines.Add('');
   ServerInfoMemo.Lines.Add('When installation finishes, the server starts automatically if you selected the server component. If you enabled automatic startup, it will also start when this Windows account signs in.');
   ServerInfoMemo.Lines.Add('');
   ServerInfoMemo.Lines.Add('Open Start menu > SafeNotify > SafeNotify Server Dashboard, or visit http://127.0.0.1:5080 on this computer. On first use, create your organisation and administrator account.');
   ServerInfoMemo.Lines.Add('');
   ServerInfoMemo.Lines.Add('Uninstall from Windows Settings > Apps > Installed apps > SafeNotify, or use the Uninstall SafeNotify shortcut in the SafeNotify Start menu folder. Uninstall stops the running client and server and removes the program. Your organisation data is kept under %LOCALAPPDATA%\SafeNotify so reinstalling does not erase it.');
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = ServerInfoPage.ID then
+    ServerInfoMemo.Lines[1] := WizardDirValue + '\server\SafeNotify.Server.exe';
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
