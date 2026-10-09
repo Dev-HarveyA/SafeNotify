@@ -11,6 +11,14 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-      - run: dotnet restore SafeNotify.slnx
+      - name: Restore NuGet packages
+        shell: pwsh
+        run: |
+          for ($attempt = 1; $attempt -le 4; $attempt++) {
+            dotnet restore SafeNotify.slnx --disable-parallel -p:NuGetAudit=false
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            if ($attempt -eq 4) { exit $LASTEXITCODE }
+            Start-Sleep -Seconds ([Math]::Min(60, 10 * $attempt))
+          }
       - run: dotnet build SafeNotify.slnx --configuration Release --no-restore
       - run: dotnet test SafeNotify.slnx --configuration Release --no-build
