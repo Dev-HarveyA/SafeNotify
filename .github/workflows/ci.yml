@@ -1,0 +1,16 @@
+name: build-and-test
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet restore SafeNotify.slnx
+      - run: dotnet build SafeNotify.slnx --configuration Release --no-restore
+      - run: dotnet test SafeNotify.slnx --configuration Release --no-build

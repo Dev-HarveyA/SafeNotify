@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SafeNotify.Client/SafeNotify.Client.csproj" />
+    <Project Path="src/SafeNotify.Server/SafeNotify.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SafeNotify.Server.Tests/SafeNotify.Server.Tests.csproj" />
+  </Folder>
+</Solution>
