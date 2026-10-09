@@ -22,7 +22,7 @@
                 <TextBlock x:Name="MessageText" Text="Alert message" Foreground="#344C64" FontSize="22" TextWrapping="Wrap" LineHeight="31" />
             </ScrollViewer>
             <StackPanel Grid.Row="3" Margin="34,0,34,30">
-                <Button x:Name="AcknowledgeButton" Content="Acknowledge receipt" Height="58" Background="#1674C9" Foreground="White" BorderThickness="0" FontSize="18" FontWeight="Bold" Click="Acknowledge_Click" />
+                <Button x:Name="AcknowledgeButton" Content="Acknowledge receipt" Height="58" Background="#D9EDFF" Foreground="#092C52" BorderThickness="0" FontSize="18" FontWeight="Bold" Click="Acknowledge_Click" />
                 <TextBlock x:Name="InstructionText" Text="Select acknowledge to confirm you have received this alert." Foreground="#73859A" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,0" />
             </StackPanel>
         </Grid>

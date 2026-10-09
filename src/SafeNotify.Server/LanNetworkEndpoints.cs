@@ -30,7 +30,14 @@ public static class LanNetworkEndpoints
             {
                 return Results.Problem("Windows could not apply the LAN network settings. No server setting was changed.", statusCode: StatusCodes.Status500InternalServerError);
             }
-            _ = RestartServerAsync(app);
+            try
+            {
+                ScheduleRestart(app);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+                return Results.Problem("LAN settings were saved, but the server could not schedule its restart. Restart SafeNotify Server manually.", statusCode: StatusCodes.Status500InternalServerError);
+            }
             return Results.Ok(new LanNetworkState(request.Enabled, GetAddresses(), port, certificateConfigured) { Restarting = true });
         });
     }
@@ -64,16 +71,15 @@ public static class LanNetworkEndpoints
         if (process.ExitCode != 0) throw new InvalidOperationException("Windows Firewall did not accept the LAN rule.");
     }
 
-    private static async Task RestartServerAsync(WebApplication app)
+    private static void ScheduleRestart(WebApplication app)
     {
-        await Task.Delay(TimeSpan.FromSeconds(1));
-        app.Lifetime.StopApplication();
-        await Task.Delay(TimeSpan.FromSeconds(3));
         var executable = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(executable)) return;
+        if (string.IsNullOrWhiteSpace(executable)) throw new InvalidOperationException("The running server executable could not be located.");
         var restart = new ProcessStartInfo(executable) { UseShellExecute = true, WorkingDirectory = AppContext.BaseDirectory };
         foreach (var argument in Environment.GetCommandLineArgs().Skip(1)) restart.ArgumentList.Add(argument);
-        Process.Start(restart);
+        restart.ArgumentList.Add("--safe-notify-restart-wait");
+        if (Process.Start(restart) is null) throw new InvalidOperationException("The server restart helper could not be started.");
+        app.Lifetime.StopApplication();
     }
 }
 

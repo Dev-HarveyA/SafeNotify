@@ -2,6 +2,14 @@
 
 SafeNotify is a self-hosted alert and messaging system for Windows organisations. An administrator runs the server and dashboard. Windows clients request access, wait for approval, and receive messages, warnings, and emergency alerts.
 
+## [Download the Windows installer from GitHub Releases](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
+
+On the Releases page, open the latest version and download `SafeNotify-Setup-x.y.z-win-x64.exe` from **Assets**. Run the installer to install SafeNotify or upgrade an existing installation. Choose **Client and server**, **Client only**, or **Server only** in setup.
+
+If there is no installer under **Assets**, a release has not finished building yet. Releases are created when a `vMAJOR.MINOR.PATCH` version tag is pushed. Check [release build status](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/release.yml) for progress or errors. SafeNotify does not install updates automatically; download and run each new installer to upgrade.
+
+**New to SafeNotify?** Install the Windows installer above. The source-build instructions below are for developers.
+
 > SafeNotify is an early development project. It is not certified or independently assessed for life-safety use. Do not use it as a replacement for approved emergency procedures or certified alarm systems.
 
 ## What it includes
@@ -16,8 +24,8 @@ SafeNotify is a self-hosted alert and messaging system for Windows organisations
 ## Requirements
 
 - Windows 10 or Windows 11.
-- .NET 10 SDK to run from source or build the applications.
-- Inno Setup 6 to build the Windows installer. It is not required to install or run SafeNotify.
+- The prebuilt installer includes what SafeNotify needs to run.
+- .NET 10 SDK and Inno Setup 6 are needed only to build from source.
 - A trusted TLS certificate for use across a LAN.
 
 ## Try SafeNotify on one computer
@@ -47,6 +55,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Server.p
 Server data is stored under `%LOCALAPPDATA%\SafeNotify\Server`. It contains the database and the DPAPI-protected key ring. Keep these files together in backups and run the server under the same Windows account that created them.
 
 ## Install SafeNotify on Windows
+
+Most users should download the installer from [the latest GitHub Release](https://github.com/Dev-HarveyA/SafeNotify/releases/latest). The following steps are for building the installer yourself.
 
 On the build computer, install Inno Setup 6. With WinGet:
 

@@ -9,6 +9,18 @@ using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using SafeNotify.Server.Data;
 
+if (args.Contains("--safe-notify-restart-wait", StringComparer.OrdinalIgnoreCase))
+{
+    await Task.Delay(TimeSpan.FromSeconds(4));
+    if (Environment.ProcessPath is { } restartExecutable)
+    {
+        var restart = new System.Diagnostics.ProcessStartInfo(restartExecutable) { UseShellExecute = true, WorkingDirectory = AppContext.BaseDirectory };
+        foreach (var argument in args.Where(argument => !string.Equals(argument, "--safe-notify-restart-wait", StringComparison.OrdinalIgnoreCase))) restart.ArgumentList.Add(argument);
+        System.Diagnostics.Process.Start(restart);
+    }
+    return;
+}
+
 var contentRoot = ResolveContentRoot();
 if (args.Contains("--migrate-data-only", StringComparer.OrdinalIgnoreCase))
 {
