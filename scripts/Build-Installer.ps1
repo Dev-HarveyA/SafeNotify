@@ -1,3 +1,7 @@
+param(
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
+    [string]$Version = "1.0.0"
+)
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $publishScript = Join-Path $PSScriptRoot "Publish.ps1"
@@ -12,7 +16,7 @@ if ([string]::IsNullOrWhiteSpace($compiler)) {
 }
 & $publishScript
 if ($LASTEXITCODE -ne 0) { throw "Publishing failed with exit code $LASTEXITCODE." }
-& $compiler $installerScript
+& $compiler "/DAppVersion=$Version" $installerScript
 if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed with exit code $LASTEXITCODE." }
-$installer = Join-Path $root "publish\installer\SafeNotify-Setup-1.0.0-win-x64.exe"
+$installer = Join-Path $root "publish\installer\SafeNotify-Setup-$Version-win-x64.exe"
 Write-Output $installer

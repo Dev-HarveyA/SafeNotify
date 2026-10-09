@@ -17,6 +17,8 @@ if (args.Contains("--migrate-data-only", StringComparer.OrdinalIgnoreCase))
 }
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = contentRoot });
+var networkSettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SafeNotify", "Server", "network-settings.json");
+builder.Configuration.AddJsonFile(networkSettingsPath, optional: true, reloadOnChange: true);
 var dataDirectory = ServerDataStorage.Resolve(builder.Configuration["SafeNotify:DataDirectory"], builder.Environment.ContentRootPath);
 Directory.CreateDirectory(dataDirectory);
 builder.Logging.AddProvider(new SafeNotifyFileLoggerProvider(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SafeNotify", "Logs")));
@@ -96,6 +98,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapCoreEndpoints();
 app.MapAdminEndpoints();
+app.MapLanNetworkEndpoints(networkSettingsPath, bindAddress, port, certificate is not null || !string.IsNullOrWhiteSpace(certificatePath));
 app.MapClientEndpoints();
 app.MapHub<DeviceHub>("/hub/device");
 app.Run();

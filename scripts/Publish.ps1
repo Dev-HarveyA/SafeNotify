@@ -8,6 +8,7 @@ $serverProject = Join-Path $root "src\SafeNotify.Server\SafeNotify.Server.csproj
 $clientProject = Join-Path $root "src\SafeNotify.Client\SafeNotify.Client.csproj"
 $serverOutput = Join-Path $root "publish\preproduction\server"
 $clientOutput = Join-Path $root "publish\preproduction\client"
+$solution = Join-Path $root "SafeNotify.slnx"
 $publishDirectory = Join-Path $root "publish\preproduction"
 if (Test-Path -LiteralPath $publishDirectory) {
     $resolvedPublishDirectory = [System.IO.Path]::GetFullPath($publishDirectory)
@@ -17,9 +18,15 @@ if (Test-Path -LiteralPath $publishDirectory) {
     }
     Remove-Item -LiteralPath $resolvedPublishDirectory -Recurse -Force
 }
-dotnet publish $serverProject --configuration Release --runtime $Runtime --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --output $serverOutput
+for ($attempt = 1; $attempt -le 4; $attempt++) {
+    dotnet restore $solution --runtime $Runtime --disable-parallel -p:NuGetAudit=false
+    if ($LASTEXITCODE -eq 0) { break }
+    if ($attempt -eq 4) { throw "Package restore failed with exit code $LASTEXITCODE." }
+    Start-Sleep -Seconds ([Math]::Min(60, 10 * $attempt))
+}
+dotnet publish $serverProject --configuration Release --runtime $Runtime --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --no-restore --output $serverOutput
 if ($LASTEXITCODE -ne 0) { throw "Server publishing failed with exit code $LASTEXITCODE." }
-dotnet publish $clientProject --configuration Release --runtime $Runtime --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --output $clientOutput
+dotnet publish $clientProject --configuration Release --runtime $Runtime --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --no-restore --output $clientOutput
 if ($LASTEXITCODE -ne 0) { throw "Windows client publishing failed with exit code $LASTEXITCODE." }
 $developmentSettings = Join-Path $serverOutput "appsettings.Development.json"
 $iisConfiguration = Join-Path $serverOutput "web.config"

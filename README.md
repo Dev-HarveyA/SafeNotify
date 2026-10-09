@@ -68,13 +68,13 @@ The installer is unsigned. Windows may show a SmartScreen warning. Sign installe
 
 ## Use SafeNotify across a LAN
 
-The server binds to `127.0.0.1` by default. For LAN use, configure HTTPS before allowing access from other computers:
+The server binds to `127.0.0.1` by default. LAN mode is controlled from **Dashboard → Settings → LAN access**. Before enabling it, configure a trusted HTTPS certificate for the server name or IP address, and install its issuing certificate chain on each client computer. The dashboard then adds a Windows Firewall rule limited to the local subnet and Private or Domain network profiles, binds the server to the LAN, and restarts it. It displays the HTTPS address and port for approved users on the same Wi-Fi/LAN.
 
-1. Obtain a certificate from your organisation's certificate authority. Its subject alternative name must match the server name clients will use.
-2. For the installed server, install the certificate and private key in the server user's **Current User → Personal** certificate store. In the installed server's `appsettings.json`, set `SafeNotify:BindAddress` to the server's LAN IP, `SafeNotify:Port` to the port you will use, and `SafeNotify:CertificateThumbprint` to the certificate thumbprint.
-3. Restart the SafeNotify Server application. Allow its port through Windows Firewall only on the organisation's private network.
-4. Install the issuing certificate chain on each client computer. In the client, enter the HTTPS server address, such as `https://safenotify.example.org:5080`, then find the organisation and request to join.
-5. Approve each new device in the dashboard's **Device requests** page.
+1. Obtain a certificate from your organisation's certificate authority. Its subject alternative name must match the server name or IP address clients will use.
+2. Install the certificate and private key in the server user's **Current User → Personal** certificate store. Set `SafeNotify:CertificateThumbprint` in the server configuration.
+3. Open **Settings → LAN access** and select **Enable LAN access**. Approve the Windows Firewall prompt. The server restarts automatically.
+4. Give approved users the HTTPS address and port shown in the dashboard. Their devices must be connected to the same organisation Wi-Fi/LAN.
+5. In each client, enter the HTTPS address, find the organisation, and request to join. Approve each new device in **Device requests**.
 
 For a development run from source, the server script can load a PFX file and prompt for its password without saving it in the repository:
 
@@ -82,7 +82,7 @@ For a development run from source, the server script can load a PFX file and pro
 .\scripts\Start-Server.ps1 -BindAddress 192.168.1.20 -Port 5080 -CertificatePath C:\SafeNotify\certificates\server.pfx
 ```
 
-The server refuses non-loopback HTTP. The client validates Windows TLS certificates normally. Do not expose the dashboard to the internet. Manual server address entry is supported; automatic network discovery is not implemented.
+To turn LAN access off, use the same dashboard control. SafeNotify removes its firewall rule, returns to loopback binding, and restarts. The server refuses non-loopback HTTP. The client validates Windows TLS certificates normally. Do not expose the dashboard to the internet. The LAN address can change if the router assigns a different IP; configure a DHCP reservation if the address needs to remain stable.
 
 ## Troubleshooting
 
@@ -142,6 +142,8 @@ The repository ignores local databases, key rings, certificates, build outputs, 
 - SafeNotify has not had an independent security, reliability, or multi-computer deployment assessment.
 
 Review [SECURITY.md](SECURITY.md) and [docs/architecture.md](docs/architecture.md) before exposing a server to a LAN.
+
+Pushing a version tag such as `v1.2.0` starts the Windows release workflow, builds the installer, and attaches it to a GitHub Release.
 
 ## Licence
 
