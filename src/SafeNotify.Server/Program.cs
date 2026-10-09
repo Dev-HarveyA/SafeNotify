@@ -81,7 +81,12 @@ builder.Services.AddSingleton<DevicePresence>();
 builder.Services.AddHostedService<AlertExpiryService>();
 builder.Services.AddProblemDetails();
 var app = builder.Build();
-using (var scope = app.Services.CreateScope()) await scope.ServiceProvider.GetRequiredService<SafeNotifyDbContext>().Database.EnsureCreatedAsync();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<SafeNotifyDbContext>();
+    await db.Database.EnsureCreatedAsync();
+    await EnsureAlertSpeechColumnAsync(db);
+}
 app.UseExceptionHandler();
 app.Use(async (context, next) =>
 {
@@ -136,6 +141,30 @@ static X509Certificate2? LoadCertificate(string? thumbprint)
     }
 
     return certificate;
+}
+
+static async Task EnsureAlertSpeechColumnAsync(SafeNotifyDbContext db)
+{
+    await db.Database.OpenConnectionAsync();
+    try
+    {
+        var connection = db.Database.GetDbConnection();
+        var columnExists = false;
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA table_info('Alerts')";
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                if (string.Equals(reader.GetString(1), "SpeakMessage", StringComparison.Ordinal)) columnExists = true;
+            }
+        }
+        if (!columnExists) await db.Database.ExecuteSqlRawAsync("ALTER TABLE Alerts ADD COLUMN SpeakMessage INTEGER NOT NULL DEFAULT 0");
+    }
+    finally
+    {
+        await db.Database.CloseConnectionAsync();
+    }
 }
 
 static string ResolveContentRoot()

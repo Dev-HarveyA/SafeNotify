@@ -302,7 +302,7 @@ public partial class MainWindow : Window
         var alert = alertQueue.Dequeue();
         activeDeliveryId = alert.Id;
         isEmergency = string.Equals(alert.Severity, "emergency", StringComparison.OrdinalIgnoreCase);
-        var popupGroup = AlertWindowGroup.ShowOnEveryScreen(alert.Title, alert.Message, alert.Severity, AcknowledgeAlertAsync);
+        var popupGroup = AlertWindowGroup.ShowOnEveryScreen(alert.Title, alert.Message, alert.Severity, alert.SpeakMessage, AcknowledgeAlertAsync);
         activeAlertWindowGroup = popupGroup;
         popupGroup.AcknowledgedAndClosed += async () =>
         {
@@ -412,7 +412,7 @@ public partial class MainWindow : Window
     private sealed record JoinResponse(int RequestId, string Status);
     private sealed record JoinStatusResponse(string Status, string? Credential, int? DeviceId);
     private sealed record ClaimStatusInput(string ClaimToken);
-    private sealed record IncomingAlert(int Id, int DeliveryId, int AlertId, string Title, string Message, string Severity, DateTimeOffset ExpiresAt);
+    private sealed record IncomingAlert(int Id, int DeliveryId, int AlertId, string Title, string Message, string Severity, DateTimeOffset ExpiresAt, bool SpeakMessage = false);
     private sealed record ErrorResponse(string Error);
 
     private sealed class PersistentReconnectPolicy : IRetryPolicy

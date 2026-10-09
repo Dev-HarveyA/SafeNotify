@@ -1,5 +1,5 @@
 #ifndef AppVersion
-#define AppVersion "1.0.0"
+#define AppVersion "1.0.3"
 #endif
 
 [Setup]
@@ -22,7 +22,7 @@ WizardStyle=modern
 CloseApplications=yes
 RestartApplications=no
 Uninstallable=yes
-VersionInfoVersion=1.0.0.0
+VersionInfoVersion={#AppVersion}.0
 VersionInfoProductName=SafeNotify
 VersionInfoDescription=SafeNotify Windows alert system
 
@@ -58,10 +58,43 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{app}\client\SafeNotify.Client.exe"; Description: "Launch SafeNotify Alert Client"; WorkingDir: "{app}\client"; Flags: postinstall nowait skipifsilent; Components: client
 Filename: "{app}\server\SafeNotify.Server.exe"; Description: "Launch SafeNotify Server"; WorkingDir: "{app}\server"; Flags: postinstall nowait skipifsilent; Components: server
 
+[UninstallRun]
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM SafeNotify.Client.exe"; Flags: runhidden
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM SafeNotify.Server.exe"; Flags: runhidden
+
 [UninstallDelete]
 Type: dirifempty; Name: "{userprograms}\SafeNotify"
 
 [Code]
+var
+  ServerInfoPage: TWizardPage;
+  ServerInfoMemo: TNewMemo;
+
+procedure InitializeWizard;
+begin
+  ServerInfoPage := CreateCustomPage(wpSelectComponents, 'Server installation and first setup', 'Where SafeNotify installs the server and how to get started');
+  ServerInfoMemo := TNewMemo.Create(WizardForm);
+  ServerInfoMemo.Parent := ServerInfoPage.Surface;
+  ServerInfoMemo.Left := 0;
+  ServerInfoMemo.Top := 0;
+  ServerInfoMemo.Width := ServerInfoPage.SurfaceWidth;
+  ServerInfoMemo.Height := ServerInfoPage.SurfaceHeight;
+  ServerInfoMemo.ReadOnly := True;
+  ServerInfoMemo.ScrollBars := ssNone;
+  ServerInfoMemo.WordWrap := True;
+  ServerInfoMemo.BorderStyle := bsNone;
+  ServerInfoMemo.Color := WizardForm.Color;
+  ServerInfoMemo.TabStop := False;
+  ServerInfoMemo.Lines.Add('Server program location:');
+  ServerInfoMemo.Lines.Add(ExpandConstant('{app}') + '\server\SafeNotify.Server.exe');
+  ServerInfoMemo.Lines.Add('');
+  ServerInfoMemo.Lines.Add('When installation finishes, the server starts automatically if you selected the server component. If you enabled automatic startup, it will also start when this Windows account signs in.');
+  ServerInfoMemo.Lines.Add('');
+  ServerInfoMemo.Lines.Add('Open Start menu > SafeNotify > SafeNotify Server Dashboard, or visit http://127.0.0.1:5080 on this computer. On first use, create your organisation and administrator account.');
+  ServerInfoMemo.Lines.Add('');
+  ServerInfoMemo.Lines.Add('Uninstall from Windows Settings > Apps > Installed apps > SafeNotify, or use the Uninstall SafeNotify shortcut in the SafeNotify Start menu folder. Uninstall stops the running client and server and removes the program. Your organisation data is kept under %LOCALAPPDATA%\SafeNotify so reinstalling does not erase it.');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then

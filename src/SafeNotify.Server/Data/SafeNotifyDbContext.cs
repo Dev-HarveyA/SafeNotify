@@ -67,6 +67,7 @@ public sealed class Alert
  public required string Title { get; set; }
  public required string Message { get; set; }
  public required string Severity { get; set; }
+ public bool SpeakMessage { get; set; }
  public required string Audience { get; set; }
  public int? GroupId { get; set; }
  public int? DeviceId { get; set; }

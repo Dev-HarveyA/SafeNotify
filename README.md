@@ -18,6 +18,7 @@ If there is no installer under **Assets**, a release has not finished building y
 - Windows desktop client built with WPF.
 - Administrator approval for new devices, device management, groups, and audit history.
 - Message, warning, and emergency alert delivery with acknowledgement and resolution tracking.
+- Optional per-alert text-to-speech using installed Windows voices; messages and warnings speak after their sound, and emergencies speak over a quieter alarm that returns to full volume afterward.
 - Local-only server binding by default. LAN binding requires HTTPS.
 - MIT licence.
 
@@ -72,9 +73,11 @@ Then build the installer from the repository folder:
 .\scripts\Build-Installer.ps1
 ```
 
-The installer is created at `publish\installer\SafeNotify-Setup-1.0.0-win-x64.exe`. It installs per-user without administrator rights. Choose client-only, server-only, or both. Setup creates Start menu shortcuts and lets you enable automatic startup for each selected component. Startup runs when the installing Windows user signs in. The alert client needs an interactive sign-in to show alerts.
+The installer is created at `publish\installer\SafeNotify-Setup-x.y.z-win-x64.exe`. It installs per-user without administrator rights. Choose client-only, server-only, or both. Setup creates Start menu shortcuts and lets you enable automatic startup for each selected component. Startup runs when the installing Windows user signs in. The alert client needs an interactive sign-in to show alerts.
 
-The installed server runs without a console window. It writes logs to `%LOCALAPPDATA%\SafeNotify\Logs`. Its configuration is in `%LOCALAPPDATA%\Programs\SafeNotify\server\appsettings.json`. Its database and key ring remain under `%LOCALAPPDATA%\SafeNotify\Server` when the application is upgraded or uninstalled.
+The installer shows the server executable location and first-run instructions before installation. After installation, open **Start menu → SafeNotify → SafeNotify Server Dashboard**, or visit [http://127.0.0.1:5080](http://127.0.0.1:5080) on the server computer. On first use, create the organisation and administrator account. The installed server program is `%LOCALAPPDATA%\Programs\SafeNotify\server\SafeNotify.Server.exe`. It runs without a console window and writes logs to `%LOCALAPPDATA%\SafeNotify\Logs`. Its configuration is in `%LOCALAPPDATA%\Programs\SafeNotify\server\appsettings.json`.
+
+To uninstall, open **Windows Settings → Apps → Installed apps → SafeNotify → Uninstall**, or use **Start menu → SafeNotify → Uninstall SafeNotify**. The uninstaller stops the running client and server and removes the program files. It keeps the organisation database, certificates, and keys under `%LOCALAPPDATA%\SafeNotify` so an uninstall or upgrade does not erase your setup. To start over with a blank organisation, stop SafeNotify and remove that data folder separately.
 
 The installer is unsigned. Windows may show a SmartScreen warning. Sign installers with an organisation-controlled code-signing certificate before distributing them to other people. Do not upload the generated installer or published binaries as part of the source repository; publish signed installers separately as GitHub Releases.
 

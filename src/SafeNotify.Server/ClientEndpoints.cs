@@ -45,7 +45,7 @@ public static class ClientEndpoints
    deliveries = deliveries.Where(x => x.Alert.ExpiresAt > DateTimeOffset.UtcNow).ToList();
    foreach (var item in deliveries) { item.Status = "Delivered"; item.UpdatedAt = DateTimeOffset.UtcNow; }
    await db.SaveChangesAsync();
-   return Results.Ok(deliveries.Select(x => new { id = x.Id, deliveryId = x.Id, alertId = x.AlertId, x.Alert.Title, x.Alert.Message, x.Alert.Severity, x.Alert.ExpiresAt }));
+   return Results.Ok(deliveries.Select(x => new { id = x.Id, deliveryId = x.Id, alertId = x.AlertId, x.Alert.Title, x.Alert.Message, x.Alert.Severity, x.Alert.SpeakMessage, x.Alert.ExpiresAt }));
   });
   app.MapPost("/api/client/deliveries/{id:int}/delivered", async (int id, HttpContext context, SafeNotifyDbContext db) =>
   {

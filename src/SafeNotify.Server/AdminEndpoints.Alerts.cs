@@ -19,7 +19,7 @@ public static partial class AdminEndpoints
    if (audience == "Device" && (request.DeviceId is null || !await db.Devices.AnyAsync(x => x.Id == request.DeviceId && x.Status == "Approved"))) return Results.BadRequest(new { error = "Select an approved device." });
    var targets = await db.Devices.Where(x => x.Status == "Approved" && (audience == "All" || audience == "Group" && x.GroupId == request.GroupId || audience == "Device" && x.Id == request.DeviceId)).ToListAsync();
    if (targets.Count == 0) return Results.BadRequest(new { error = "There are no approved devices in this audience." });
-   var alert = new Alert { Title = title, Message = message, Severity = severity, Audience = audience, GroupId = request.GroupId, DeviceId = request.DeviceId, CreatedById = int.Parse(context.User.FindFirst("adminId")!.Value), ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(request.ExpiresMinutes) };
+   var alert = new Alert { Title = title, Message = message, Severity = severity, SpeakMessage = request.SpeakMessage, Audience = audience, GroupId = request.GroupId, DeviceId = request.DeviceId, CreatedById = int.Parse(context.User.FindFirst("adminId")!.Value), ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(request.ExpiresMinutes) };
    db.Alerts.Add(alert);
    await db.SaveChangesAsync();
    var deliveries = targets.Select(device => new Delivery { AlertId = alert.Id, DeviceId = device.Id, Status = presence.IsOnline(device.Id) ? "Sent" : "Offline" }).ToList();
@@ -28,11 +28,11 @@ public static partial class AdminEndpoints
    await db.SaveChangesAsync();
    foreach (var delivery in deliveries.Where(item => presence.IsOnline(item.DeviceId)))
    {
-    await hub.Clients.Group(DeviceHub.GroupName(delivery.DeviceId)).SendAsync("AlertReceived", new { id = delivery.Id, deliveryId = delivery.Id, alertId = alert.Id, alert.Title, alert.Message, alert.Severity, alert.ExpiresAt });
+    await hub.Clients.Group(DeviceHub.GroupName(delivery.DeviceId)).SendAsync("AlertReceived", new { id = delivery.Id, deliveryId = delivery.Id, alertId = alert.Id, alert.Title, alert.Message, alert.Severity, alert.SpeakMessage, alert.ExpiresAt });
    }
    return Results.Created($"/api/admin/alerts/{alert.Id}", new { alert.Id, recipients = targets.Count, online = deliveries.Count(item => item.Status == "Sent"), offline = deliveries.Count(item => item.Status == "Offline") });
   });
-  admin.MapGet("/alerts", async (SafeNotifyDbContext db) => Results.Ok(await db.Alerts.OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.Message, x.Severity, x.Audience, x.CreatedAt, x.ExpiresAt, recipients = db.Deliveries.Count(d => d.AlertId == x.Id), delivered = db.Deliveries.Count(d => d.AlertId == x.Id && d.Status != "Queued" && d.Status != "Offline"), acknowledged = db.Deliveries.Count(d => d.AlertId == x.Id && d.AcknowledgedAt != null), resolved = db.Deliveries.Count(d => d.AlertId == x.Id && d.ResolvedAt != null) }).ToListAsync()));
+  admin.MapGet("/alerts", async (SafeNotifyDbContext db) => Results.Ok(await db.Alerts.OrderByDescending(x => x.CreatedAt).Select(x => new { x.Id, x.Title, x.Message, x.Severity, x.SpeakMessage, x.Audience, x.CreatedAt, x.ExpiresAt, recipients = db.Deliveries.Count(d => d.AlertId == x.Id), delivered = db.Deliveries.Count(d => d.AlertId == x.Id && d.Status != "Queued" && d.Status != "Offline"), acknowledged = db.Deliveries.Count(d => d.AlertId == x.Id && d.AcknowledgedAt != null), resolved = db.Deliveries.Count(d => d.AlertId == x.Id && d.ResolvedAt != null) }).ToListAsync()));
   admin.MapPost("/alerts/{id:int}/resolve", async (int id, SafeNotifyDbContext db, HttpContext context) =>
   {
    var alert = await db.Alerts.SingleOrDefaultAsync(x => x.Id == id && x.Severity == "emergency");
@@ -78,7 +78,7 @@ public static partial class AdminEndpoints
   });
  }
 }
-public sealed record CreateAlert(string Title, string Message, string Severity, string Audience, int? GroupId, int? DeviceId, int ExpiresMinutes);
+public sealed record CreateAlert(string Title, string Message, string Severity, string Audience, int? GroupId, int? DeviceId, int ExpiresMinutes, bool SpeakMessage);
 public sealed record RenameOrganisation(string Name);
 
 
