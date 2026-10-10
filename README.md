@@ -10,9 +10,31 @@
 
 ## Screenshots
 
-| Admin dashboard | Alert composer |
-| --- | --- |
-| ![SafeNotify admin dashboard showing device status and recent alerts](docs/images/safenotify-dashboard.png) | ![SafeNotify alert composer with a warning preview and text-to-speech enabled](docs/images/safenotify-alert-composer.png) |
+### Admin dashboard
+
+![SafeNotify dashboard with server status, device counts, and recent alerts](docs/images/safenotify-dashboard.png)
+
+### Send an alert
+
+![SafeNotify alert composer with priority, text-to-speech, recipient, and expiry options](docs/images/safenotify-alert-composer.png)
+
+### Device requests
+
+![SafeNotify device request review page showing approved device access](docs/images/safenotify-device-requests.png)
+
+### Alert history
+
+![SafeNotify alert history with delivery and acknowledgement status](docs/images/safenotify-alert-history.png)
+
+### Alerts on Windows
+
+These examples show how message, warning, and emergency alerts appear on a recipient's screen.
+
+![SafeNotify message alert pop-up on the Windows desktop](docs/images/safenotify-message-alert.png)
+
+![SafeNotify warning alert pop-up on the Windows desktop](docs/images/safenotify-warning-alert.png)
+
+![SafeNotify emergency alert pop-up on the Windows desktop](docs/images/safenotify-emergency-alert.png)
 
 ## Download
 
