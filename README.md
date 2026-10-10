@@ -43,7 +43,7 @@ The server listens only on the server computer by default. To allow approved cli
 
 1. On the server computer, open **Dashboard → Settings → LAN access** and select **Set up LAN automatically**.
 2. Approve the Windows Firewall prompt. SafeNotify creates HTTPS certificates and limits its firewall rule to the local network.
-3. Download the public `SafeNotify-LAN.cer` certificate. On each client computer, open it, select **Current User**, choose **Place all certificates in the following store**, then select **Trusted Root Certification Authorities**.
+3. Download the public `SafeNotify-LAN.cer` certificate. On each client computer, drag the file onto the SafeNotify client window. The client installs it for the current Windows user and checks the organisation server again.
 4. In the client, use the HTTPS address shown in the dashboard, find the organisation, request to join, and have an administrator approve the device.
 
 Do not expose the dashboard to the internet. The certificate file is public, but never share the server's private key. For a workplace deployment, use a certificate issued by your organisation's certificate authority.

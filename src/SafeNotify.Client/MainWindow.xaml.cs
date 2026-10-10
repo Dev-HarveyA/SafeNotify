@@ -1,7 +1,9 @@
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using System.IO;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -52,6 +54,45 @@ public partial class MainWindow : Window
     }
 
     private async void Discover_Click(object sender, RoutedEventArgs e) => await DiscoverAsync();
+
+    private void Window_PreviewDragOver(object sender, System.Windows.DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop) ? System.Windows.DragDropEffects.Copy : System.Windows.DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void Window_Drop(object sender, System.Windows.DragEventArgs e)
+    {
+        if (e.Data.GetData(System.Windows.DataFormats.FileDrop) is not string[] { Length: > 0 } files) return;
+        var certificatePath = files.FirstOrDefault(path => string.Equals(Path.GetExtension(path), ".cer", StringComparison.OrdinalIgnoreCase));
+        if (certificatePath is null)
+        {
+            SetStatus("Drop the public .cer certificate file from the SafeNotify server.", Colors.OrangeRed);
+            return;
+        }
+
+        try
+        {
+            using var certificate = X509CertificateLoader.LoadCertificateFromFile(certificatePath);
+            if (!certificate.Subject.Contains("SafeNotify LAN Root", StringComparison.OrdinalIgnoreCase)
+                || !certificate.Extensions.OfType<X509BasicConstraintsExtension>().Any(extension => extension.CertificateAuthority))
+            {
+                SetStatus("That file is not a SafeNotify LAN root certificate.", Colors.OrangeRed);
+                return;
+            }
+
+            using var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadWrite);
+            var existing = store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, false);
+            if (existing.Count == 0) store.Add(certificate);
+            SetStatus("SafeNotify certificate trusted for this Windows user. Find the organisation again.", Colors.SeaGreen);
+            await DiscoverAsync();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or CryptographicException or InvalidOperationException)
+        {
+            SetStatus("Could not install the certificate. Check that it is the public SafeNotify .cer file.", Colors.OrangeRed);
+        }
+    }
 
     private async Task DiscoverAsync()
     {
