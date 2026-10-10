@@ -31,7 +31,7 @@ SQLite timestamps are stored as UTC ticks so range comparisons and sorting remai
 
 ## Network boundaries
 
-The server binds only to `127.0.0.1:5080` by default. A non-loopback address requires a configured TLS certificate. LAN mode adds a firewall rule limited to the local subnet and requires the certificate to be trusted by client devices. Use an organisation-managed certificate and restrict firewall access to the organisation's device networks. Discovery is intentionally not an authorization mechanism. In this build, the operator enters the server address manually.
+The server binds only to `127.0.0.1:5080` by default. A non-loopback address requires a configured TLS certificate. LAN mode adds a firewall rule limited to the local subnet and requires the certificate to be trusted by client devices. Use an organisation-managed certificate and restrict firewall access to the organisation's device networks. The operator enters the server address in the client; discovery confirms the organisation name but does not grant access.
 
 ## Runtime files
 

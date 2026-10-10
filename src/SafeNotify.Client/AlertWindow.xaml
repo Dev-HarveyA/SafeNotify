@@ -3,27 +3,27 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="SafeNotify Alert" Width="620" Height="420" MinWidth="520" MinHeight="360"
         WindowStartupLocation="CenterScreen" WindowStyle="None" ResizeMode="NoResize"
-        Topmost="True" ShowActivated="True" ShowInTaskbar="False" Background="#F4F7FB"
+        Topmost="True" ShowActivated="True" ShowInTaskbar="False" Background="#F2F0E9"
         Closing="Window_Closing">
-    <Border x:Name="Shell" Margin="12" CornerRadius="20" BorderThickness="2" BorderBrush="#1684DF" Background="White">
+    <Border x:Name="Shell" Margin="12" CornerRadius="3" BorderThickness="1" BorderBrush="#D6D7CE" Background="#FFFEFA">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="14" />
+                <RowDefinition Height="8" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <Border x:Name="AlertStripe" Grid.Row="0" Background="#1684DF" CornerRadius="18,18,0,0" />
+            <Border x:Name="AlertStripe" Grid.Row="0" Background="#087579" />
             <StackPanel Grid.Row="1" Margin="34,30,34,8">
-                <TextBlock x:Name="SeverityText" Text="MESSAGE" Foreground="#126BB8" FontSize="16" FontWeight="ExtraBold" />
-                <TextBlock x:Name="TitleText" Text="Alert title" Foreground="#152843" FontSize="34" FontWeight="Bold" TextWrapping="Wrap" Margin="0,10,0,0" />
+                <TextBlock x:Name="SeverityText" Text="MESSAGE" Foreground="#075D61" FontSize="14" FontWeight="Bold" />
+                <TextBlock x:Name="TitleText" Text="Alert title" Foreground="#202C2C" FontFamily="Georgia" FontSize="34" FontWeight="Bold" TextWrapping="Wrap" Margin="0,10,0,0" />
             </StackPanel>
             <ScrollViewer Grid.Row="2" Margin="34,10,34,24" VerticalScrollBarVisibility="Auto">
-                <TextBlock x:Name="MessageText" Text="Alert message" Foreground="#344C64" FontSize="22" TextWrapping="Wrap" LineHeight="31" />
+                <TextBlock x:Name="MessageText" Text="Alert message" Foreground="#354541" FontSize="21" TextWrapping="Wrap" LineHeight="30" />
             </ScrollViewer>
             <StackPanel Grid.Row="3" Margin="34,0,34,30">
-                <Button x:Name="AcknowledgeButton" Content="Acknowledge receipt" Height="58" Background="#D9EDFF" Foreground="#092C52" BorderThickness="0" FontSize="18" FontWeight="Bold" Click="Acknowledge_Click" />
-                <TextBlock x:Name="InstructionText" Text="Select acknowledge to confirm you have received this alert." Foreground="#73859A" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,0" />
+                <Button x:Name="AcknowledgeButton" Content="Acknowledge alert" Height="58" Background="#087579" Foreground="White" BorderThickness="0" FontSize="18" FontWeight="Bold" Click="Acknowledge_Click" />
+                <TextBlock x:Name="InstructionText" Text="Acknowledge to close this alert." Foreground="#586965" FontSize="13" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,0" />
             </StackPanel>
         </Grid>
     </Border>

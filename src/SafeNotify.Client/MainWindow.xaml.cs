@@ -45,7 +45,7 @@ public partial class MainWindow : Window
         if (state.RequestId is not null && !string.IsNullOrWhiteSpace(state.ClaimToken))
         {
             requestPending = true;
-            SetStatus("Your request has been sent. Waiting for administrator approval.", Colors.Goldenrod);
+            SetStatus("Access request sent. Waiting for your administrator to approve this device.", Colors.Goldenrod);
             StartPolling();
             await PollApprovalAsync();
             return;
@@ -67,7 +67,7 @@ public partial class MainWindow : Window
         var certificatePath = files.FirstOrDefault(path => string.Equals(Path.GetExtension(path), ".cer", StringComparison.OrdinalIgnoreCase));
         if (certificatePath is null)
         {
-            SetStatus("Drop the public .cer certificate file from the SafeNotify server.", Colors.OrangeRed);
+            SetStatus("Drop the public certificate supplied by your SafeNotify administrator.", Colors.OrangeRed);
             return;
         }
 
@@ -77,7 +77,7 @@ public partial class MainWindow : Window
             if (!certificate.Subject.Contains("SafeNotify LAN Root", StringComparison.OrdinalIgnoreCase)
                 || !certificate.Extensions.OfType<X509BasicConstraintsExtension>().Any(extension => extension.CertificateAuthority))
             {
-                SetStatus("That file is not a SafeNotify LAN root certificate.", Colors.OrangeRed);
+                SetStatus("That file is not a SafeNotify server certificate.", Colors.OrangeRed);
                 return;
             }
 
@@ -85,12 +85,12 @@ public partial class MainWindow : Window
             store.Open(OpenFlags.ReadWrite);
             var existing = store.Certificates.Find(X509FindType.FindByThumbprint, certificate.Thumbprint, false);
             if (existing.Count == 0) store.Add(certificate);
-            SetStatus("SafeNotify certificate trusted for this Windows user. Find the organisation again.", Colors.SeaGreen);
+            SetStatus("Certificate installed for this Windows account. Checking the server again.", Colors.SeaGreen);
             await DiscoverAsync();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or CryptographicException or InvalidOperationException)
         {
-            SetStatus("Could not install the certificate. Check that it is the public SafeNotify .cer file.", Colors.OrangeRed);
+            SetStatus("Certificate could not be installed. Check that you selected the public SafeNotify certificate.", Colors.OrangeRed);
         }
     }
 
@@ -98,7 +98,7 @@ public partial class MainWindow : Window
     {
         if (!TryGetBaseAddress(out var address))
         {
-            SetStatus("Enter a valid HTTPS server address. HTTP is allowed only on this computer for development.", Colors.OrangeRed);
+            SetStatus("Enter a valid HTTPS address. HTTP works only for a server on this computer.", Colors.OrangeRed);
             return;
         }
         DiscoverButton.IsEnabled = false;
@@ -117,14 +117,14 @@ public partial class MainWindow : Window
             connectionLoopCancellation = null;
             StartConnectionLoop();
         }
-        SetStatus("Looking for your organisation system…", Colors.Goldenrod);
+        SetStatus("Checking the server...", Colors.Goldenrod);
         try
         {
             using var response = await Client.GetAsync(new Uri(address, "/api/discovery"));
             if (!response.IsSuccessStatusCode)
             {
-                OrganisationName.Text = "Organisation system not detected.";
-                SetStatus("Organisation system not detected. Check the address or contact your administrator.", Colors.OrangeRed);
+                OrganisationName.Text = "Server not found.";
+                SetStatus("Server not found. Check the address or ask your administrator.", Colors.OrangeRed);
                 JoinButton.IsEnabled = false;
                 return;
             }
@@ -139,7 +139,7 @@ public partial class MainWindow : Window
                 }
                 else if (!sessionResponse.IsSuccessStatusCode)
                 {
-                    SetStatus("The organisation system responded, but the device status could not be checked. Try again.", Colors.OrangeRed);
+                    SetStatus("The server responded, but SafeNotify could not check this device's approval. Try again.", Colors.OrangeRed);
                     JoinButton.IsEnabled = false;
                     return;
                 }
@@ -147,18 +147,18 @@ public partial class MainWindow : Window
             var result = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
             state.ServerUrl = address.ToString().TrimEnd('/');
             SaveState();
-            OrganisationName.Text = result?.Organisation ?? "Organisation system found.";
-            SetStatus("Organisation system found. You can request access.", Colors.SeaGreen);
+            OrganisationName.Text = result?.Organisation ?? "Organisation found.";
+            SetStatus("Organisation found. Select Request to join to ask for access.", Colors.SeaGreen);
             JoinButton.IsEnabled = !requestPending && string.IsNullOrWhiteSpace(state.Credential);
             if (string.IsNullOrWhiteSpace(state.Credential) && !requestPending)
-                SetStatus("Organisation system found. You can request access.", Colors.SeaGreen);
+                SetStatus("Organisation found. Select Request to join to ask for access.", Colors.SeaGreen);
             else if (!string.IsNullOrWhiteSpace(state.Credential))
-                SetStatus("Connected and approved. You can receive organisation alerts.", Colors.SeaGreen);
+                SetStatus("Connected. This device is approved to receive alerts.", Colors.SeaGreen);
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
         {
-            OrganisationName.Text = "Organisation system not detected.";
-            SetStatus("Could not reach that server. Check the address and your network connection.", Colors.OrangeRed);
+            OrganisationName.Text = "Server not found.";
+            SetStatus("Could not reach the server. Check the address and your network connection.", Colors.OrangeRed);
             JoinButton.IsEnabled = false;
         }
         finally { DiscoverButton.IsEnabled = true; }
@@ -179,26 +179,26 @@ public partial class MainWindow : Window
             if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.Conflict)
             {
                 var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                SetStatus(error?.Error ?? "The join request could not be sent. Check the server and try again.", Colors.OrangeRed);
+                SetStatus(error?.Error ?? "Could not send the access request. Check the server and try again.", Colors.OrangeRed);
                 JoinButton.IsEnabled = true;
                 return;
             }
             if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
                 var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                SetStatus(error?.Error ?? "This installation cannot submit another request.", Colors.OrangeRed);
+                SetStatus(error?.Error ?? "This device cannot submit another request right now.", Colors.OrangeRed);
                 return;
             }
             var result = await response.Content.ReadFromJsonAsync<JoinResponse>();
             state.RequestId = result?.RequestId;
             requestPending = true;
             SaveState();
-            SetStatus("Your request has been sent. Waiting for administrator approval.", Colors.Goldenrod);
+            SetStatus("Access request sent. Waiting for your administrator to approve this device.", Colors.Goldenrod);
             StartPolling();
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
         {
-            SetStatus("The server could not be reached. Your request was not sent.", Colors.OrangeRed);
+            SetStatus("Could not reach the server. Your request was not sent.", Colors.OrangeRed);
             JoinButton.IsEnabled = true;
         }
     }
@@ -247,7 +247,7 @@ public partial class MainWindow : Window
                 state.ClaimToken = null;
                 SaveState();
                 await Dispatcher.InvokeAsync(() =>
-                    SetStatus("Your request was rejected. Contact your administrator if you need access.", Colors.OrangeRed));
+                    SetStatus("Access request declined. Contact your administrator if you still need access.", Colors.OrangeRed));
             }
         }
         catch (Exception exception) when (
@@ -303,24 +303,24 @@ public partial class MainWindow : Window
                     await connection.StopAsync();
                 }).Task.Unwrap());
                 connection.Reconnecting += _ => Dispatcher.InvokeAsync(() =>
-                    SetStatus("Connection interrupted. Reconnecting automatically…", Colors.Goldenrod)).Task;
+                    SetStatus("Connection interrupted. Reconnecting now.", Colors.Goldenrod)).Task;
                 connection.Reconnected += async _ =>
                 {
-                    await Dispatcher.InvokeAsync(() => SetStatus("Connected and approved. You can receive organisation alerts.", Colors.SeaGreen));
+                    await Dispatcher.InvokeAsync(() => SetStatus("Connected. This device is approved to receive alerts.", Colors.SeaGreen));
                     await PollAlertsAsync(cancellationToken);
                 };
                 connection.Closed += _ => Dispatcher.InvokeAsync(() =>
-                    SetStatus("Server offline. SafeNotify is retrying automatically…", Colors.OrangeRed)).Task;
+                    SetStatus("Server unavailable. SafeNotify will reconnect automatically.", Colors.OrangeRed)).Task;
                 await connection.StartAsync(cancellationToken);
                 retryDelay = TimeSpan.FromSeconds(2);
                 JoinButton.IsEnabled = false;
-                SetStatus("Connected and approved. You can receive organisation alerts.", Colors.SeaGreen);
+                SetStatus("Connected. This device is approved to receive alerts.", Colors.SeaGreen);
                 await PollAlertsAsync(cancellationToken);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { return; }
             catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
             {
-                SetStatus("Server offline. SafeNotify is retrying automatically…", Colors.OrangeRed);
+                SetStatus("Server unavailable. SafeNotify will reconnect automatically.", Colors.OrangeRed);
                 if (hub is not null)
                 {
                     await hub.DisposeAsync();
@@ -365,7 +365,7 @@ public partial class MainWindow : Window
         state.ClaimToken = null;
         SaveState();
         JoinButton.IsEnabled = true;
-        SetStatus("This device is no longer registered. Request to join again for administrator approval.", Colors.OrangeRed);
+        SetStatus("This device is no longer approved. Submit a new access request if you need alerts.", Colors.OrangeRed);
         return Task.CompletedTask;
     }
     private int activeDeliveryId;
@@ -400,10 +400,10 @@ public partial class MainWindow : Window
         if (activeDeliveryId == 0) return false;
         if (!await PostAsync($"/api/client/deliveries/{activeDeliveryId}/acknowledge"))
         {
-            SetStatus("Could not record acknowledgement. Check your connection and try again.", Colors.OrangeRed);
+            SetStatus("Acknowledgement could not be recorded. Check the connection and try again.", Colors.OrangeRed);
             return false;
         }
-        if (isEmergency) SetStatus("Receipt acknowledged. This does not confirm the emergency is resolved.", Colors.SeaGreen);
+        if (isEmergency) SetStatus("Acknowledgement recorded. The emergency is not marked as resolved.", Colors.SeaGreen);
         activeDeliveryId = 0;
         isEmergency = false;
         return true;
@@ -445,8 +445,29 @@ public partial class MainWindow : Window
     private void SetStatus(string text, Color color)
     {
         StatusMessage.Text = text;
-        ConnectionStatus.Text = text.Length > 45 ? text[..42] + "…" : text;
-        ConnectionDot.Fill = new SolidColorBrush(color);
+        var statusColor = color == Colors.SeaGreen
+            ? Color.FromRgb(36, 115, 79)
+            : color == Colors.Goldenrod
+                ? Color.FromRgb(138, 87, 0)
+                : color == Colors.OrangeRed
+                    ? Color.FromRgb(169, 40, 50)
+                    : color;
+        var indicatorColor = color == Colors.SeaGreen
+            ? Color.FromRgb(103, 196, 142)
+            : color == Colors.Goldenrod
+                ? Color.FromRgb(227, 162, 82)
+                : color == Colors.OrangeRed
+                    ? Color.FromRgb(233, 122, 114)
+                    : color;
+        ConnectionStatus.Text = color == Colors.SeaGreen
+            ? "Connected"
+            : color == Colors.Goldenrod
+                ? "In progress"
+                : color == Colors.OrangeRed
+                    ? "Needs attention"
+                    : "Not connected";
+        StatusMessage.Foreground = new SolidColorBrush(statusColor);
+        ConnectionDot.Fill = new SolidColorBrush(indicatorColor);
     }
 
     private ClientState LoadState() => stateStore.Load();

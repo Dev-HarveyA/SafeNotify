@@ -7,7 +7,7 @@ const state = {
   devices: [],
 };
 const labels = {
-  overview: "Overview",
+  overview: "Dashboard",
   send: "Send alert",
   requests: "Device requests",
   devices: "Devices",
@@ -90,6 +90,9 @@ function showAccess(setup) {
   el("accessIntro").textContent = setup
     ? "Create the first administrator account for this server."
     : "Sign in to your local alert dashboard.";
+  el("accessForm").querySelector('button[type="submit"]').textContent = setup
+    ? "Create account"
+    : "Sign in";
   el("organisationField").classList.toggle("hidden", !setup);
   el("accessForm").querySelector('[name="password"]').autocomplete = setup
     ? "new-password"
@@ -146,9 +149,9 @@ function handleContentInput(event) {
   if (event.target.form?.id !== "alertForm") return;
 
   const values = new FormData(event.target.form);
-  el("previewTitle").textContent = values.get("title") || "Your alert title";
+  el("previewTitle").textContent = values.get("title") || "Alert title";
   el("previewMessage").textContent =
-    values.get("message") || "Your message appears here.";
+    values.get("message") || "Enter a message to see the preview.";
   el("preview").className = `preview ${values.get("severity")}`;
 }
 function handleContentSubmit(event) {
@@ -171,7 +174,7 @@ function updateAudienceTarget() {
             `<option value="${item.id}">${escapeHtml(item.name)}</option>`,
         )
         .join("")
-    : '<option value="">No recipients available</option>';
+    : '<option value="">No approved recipients are available</option>';
 }
 async function submitAlert(event) {
   event.preventDefault();
@@ -184,7 +187,7 @@ async function submitAlert(event) {
       : audience === "Group"
         ? "the selected group"
         : "the selected device";
-  if (!confirm(`Send this ${severity} alert to ${target}?`)) return;
+  if (!confirm(`Send this alert to ${target}?`)) return;
 
   const body = {
     title: values.get("title"),
@@ -202,8 +205,9 @@ async function submitAlert(event) {
       method: "POST",
       body: JSON.stringify(body),
     });
+    const deviceLabel = result.recipients === 1 ? "device" : "devices";
     toast(
-      `Alert sent to ${result.recipients} devices. ${result.online} connected, ${result.offline} offline.`,
+      `Alert sent to ${result.recipients} ${deviceLabel}: ${result.online} online, ${result.offline} offline.`,
     );
     go("history");
   } catch (error) {
@@ -350,15 +354,15 @@ async function overview() {
   el("orgLabel").textContent = org.organisation || "Organisation";
   el("content").innerHTML = `<div class="page-intro">
       <div>
-        <h2>${escapeHtml(org.organisation)} status</h2>
-        <p>Current device connections and alert activity.</p>
+        <h2>${escapeHtml(org.organisation)} dashboard</h2>
+        <p>Device access and recent alerts.</p>
       </div>
       <button class="button primary" data-action="navigate" data-page="send">Compose alert</button>
     </div>
     <div class="stats">
       ${stat("Approved devices", data.approvedDevices, "Active registrations")}
-      ${stat("Connected now", data.connectedDevices, "Live client connections")}
-      ${stat("Pending requests", data.pendingRequests, "Waiting for review")}
+      ${stat("Connected now", data.connectedDevices, "Devices online")}
+      ${stat("Pending requests", data.pendingRequests, "Awaiting approval")}
       ${stat("Alerts sent", data.totalAlerts, "All time")}
     </div>
     <section class="panel">
@@ -390,7 +394,7 @@ function stat(title, value, foot) {
   </div>`;
 }
 function alertTable(items) {
-  if (!items.length) return '<div class="empty">No alerts sent yet.</div>';
+  if (!items.length) return '<div class="empty">No alerts have been sent.</div>';
   const rows = items
     .map(
       (item) => `<tr>
@@ -419,7 +423,7 @@ async function sendPage() {
   el("content").innerHTML = `<div class="page-intro">
       <div>
         <h2>Compose an alert</h2>
-        <p>Choose a priority and select the devices that should receive it.</p>
+        <p>Choose who should receive the alert, then write the message.</p>
       </div>
     </div>
     <div class="form-grid">
@@ -427,7 +431,7 @@ async function sendPage() {
         <form id="alertForm" class="form-grid">
           <div class="field full">
             <label for="title">Title</label>
-            <input id="title" name="title" maxlength="120" required placeholder="For example, Staff meeting">
+            <input id="title" name="title" maxlength="120" required placeholder="For example, Staff meeting at 2 pm">
           </div>
           <div class="field full">
             <label>Priority</label>
@@ -438,24 +442,24 @@ async function sendPage() {
               </label>
               <label class="severity-option warning">
                 <input type="radio" name="severity" value="warning">
-                <span>Warning<small>Important action</small></span>
+                <span>Warning<small>Action needed</small></span>
               </label>
               <label class="severity-option emergency">
                 <input type="radio" name="severity" value="emergency">
-                <span>Emergency<small>Urgent response</small></span>
+                <span>Emergency<small>Respond now</small></span>
               </label>
             </div>
           </div>
           <div class="field full">
             <label for="message">Message</label>
-            <textarea id="message" name="message" maxlength="4000" required placeholder="Write clear instructions for recipients."></textarea>
+            <textarea id="message" name="message" maxlength="4000" required placeholder="What should recipients know or do?"></textarea>
           </div>
           <div class="field full">
             <label class="speak-option">
               <input name="speakMessage" type="checkbox">
               <span>
-                <strong>Read the title and message aloud</strong>
-                <small>Messages and warnings speak after their sound. Emergencies speak over a quieter alarm that returns to full volume when speech ends.</small>
+                <strong>Read the alert aloud</strong>
+                <small>Messages and warnings are spoken after their sound. For emergencies, the alarm lowers while the alert is read, then returns to full volume.</small>
               </span>
             </label>
           </div>
@@ -483,13 +487,13 @@ async function sendPage() {
           <div class="field full">
             <label>Preview</label>
             <div id="preview" class="preview">
-              <strong id="previewTitle">Your alert title</strong>
-              <p id="previewMessage">Your message appears here.</p>
+              <strong id="previewTitle">Alert title</strong>
+              <p id="previewMessage">Enter a message to see the preview.</p>
             </div>
           </div>
           <div class="field full actions">
             <button class="button primary" type="submit">Send alert</button>
-            <span class="subtle">Sending is recorded in the audit log.</span>
+            <span class="subtle">Every alert is recorded in the audit log.</span>
           </div>
         </form>
       </section>
@@ -509,7 +513,7 @@ async function requestsPage() {
         <td>${time(item.requestedAt)}</td>
         <td>
           <div class="actions">
-            <button class="button primary small" data-action="review-request" data-id="${item.id}" data-decision="approve">Accept</button>
+            <button class="button primary small" data-action="review-request" data-id="${item.id}" data-decision="approve">Approve</button>
             <button class="button danger small" data-action="review-request" data-id="${item.id}" data-decision="reject">Reject</button>
           </div>
         </td>
@@ -547,11 +551,11 @@ async function requestsPage() {
               <tbody>${pendingRows}</tbody>
             </table>
           </div>`
-          : '<div class="empty">No pending device requests.</div>'
+          : '<div class="empty">There are no device requests to review.</div>'
       }
     </section>
     <section class="panel">
-      <div class="panel-heading"><h3>Recent decisions</h3></div>
+      <div class="panel-heading"><h3>Reviewed requests</h3></div>
       ${
         decidedRows
           ? `<div class="table-wrap">
@@ -560,7 +564,7 @@ async function requestsPage() {
               <tbody>${decidedRows}</tbody>
             </table>
           </div>`
-          : '<div class="empty">No decisions recorded yet.</div>'
+          : '<div class="empty">No requests have been reviewed.</div>'
       }
     </section>`;
 }
@@ -588,8 +592,8 @@ async function devicesPage() {
   const rows = items.map((item) => deviceRow(item, groups)).join("");
   el("content").innerHTML = `<div class="page-intro">
       <div>
-        <h2>Device inventory</h2>
-        <p>Review registrations, recent contact and group membership.</p>
+        <h2>Devices</h2>
+        <p>Check approval, connection, group and last contact for each device.</p>
       </div>
     </div>
     <section class="panel">
@@ -605,7 +609,7 @@ async function devicesPage() {
               <tbody>${rows}</tbody>
             </table>
           </div>`
-          : '<div class="empty">No devices are registered yet.</div>'
+          : '<div class="empty">No devices are registered.</div>'
       }
     </section>`;
 }
@@ -680,7 +684,7 @@ async function groupsPage() {
       (group) => `<section class="panel group-card">
         <div>
           <strong>${escapeHtml(group.name)}</strong>
-          <small>${group.deviceCount} approved devices</small>
+        <small>${group.deviceCount} approved ${group.deviceCount === 1 ? "device" : "devices"}</small>
         </div>
         <button class="button danger small" data-action="delete-group" data-id="${group.id}">Delete</button>
       </section>`,
@@ -701,7 +705,7 @@ async function groupsPage() {
       </form>
     </section>
     <div class="card-grid">
-      ${groups.length ? cards : '<section class="panel empty">No groups created yet.</section>'}
+      ${groups.length ? cards : '<section class="panel empty">No device groups have been created.</section>'}
     </div>`;
 }
 async function deleteGroup(id) {
@@ -745,14 +749,14 @@ async function historyPage() {
 
   el("content").innerHTML = `<div class="page-intro">
       <div>
-        <h2>Alert delivery history</h2>
-        <p>Review delivery, acknowledgement and resolution for each alert.</p>
+        <h2>Alert history</h2>
+        <p>See who received and acknowledged each alert.</p>
       </div>
       <button class="button primary" data-action="navigate" data-page="send">Compose alert</button>
     </div>
     <section class="panel">
       <div class="panel-heading">
-        <h3>Previous alerts</h3>
+        <h3>Sent alerts</h3>
         <small>${items.length} alerts</small>
       </div>
       ${
@@ -763,7 +767,7 @@ async function historyPage() {
               <tbody>${rows}</tbody>
             </table>
           </div>`
-          : '<div class="empty">No alerts sent yet.</div>'
+          : '<div class="empty">No alerts have been sent.</div>'
       }
     </section>`;
 }
@@ -803,7 +807,7 @@ async function auditPage() {
     <section class="panel">
       <div class="panel-heading">
         <h3>Recent activity</h3>
-        <small>Latest 500 entries</small>
+        <small>Showing up to 500 entries</small>
       </div>
       ${
         items.length
@@ -813,7 +817,7 @@ async function auditPage() {
               <tbody>${rows}</tbody>
             </table>
           </div>`
-          : '<div class="empty">No activity recorded yet.</div>'
+          : '<div class="empty">No activity has been recorded.</div>'
       }
     </section>`;
 }
@@ -850,7 +854,7 @@ async function settingsPage() {
   state.organisation = settings.organisation;
   const address = network.addresses.length
     ? `https://${network.addresses[0]}:${network.port}`
-    : "No active LAN address detected";
+    : "No LAN address is available";
   const lanAction = network.certificateConfigured
     ? `<button id="lanToggle" data-enabled="${network.enabled}" data-address="${escapeHtml(address)}" data-port="${network.port}" class="button ${network.enabled ? "danger" : "primary"}">${network.enabled ? "Turn LAN access off" : "Enable LAN access"}</button>`
     : '<button id="lanSetup" class="button primary">Set up LAN automatically</button>';
@@ -858,15 +862,15 @@ async function settingsPage() {
     ? '<button id="downloadLanCertificate" class="button secondary">Download trust certificate</button>'
     : "";
   const certificateMessage = network.certificateConfigured
-    ? "HTTPS is configured. Each Windows computer that connects must trust the public certificate."
-    : "Automatic setup creates a local HTTPS certificate, enables LAN access, and adds the restricted Windows Firewall rule. You will download a public certificate to install on each client computer.";
+    ? "HTTPS is configured. Install the public certificate on each Windows client before connecting."
+    : "Automatic setup creates the HTTPS certificate, enables LAN access and limits the firewall rule to your local network. Download the public certificate and install it on each client.";
   const lanStatus = network.certificateConfigured
     ? `LAN access is ${network.enabled ? "on" : "off"}.`
-    : "Select Set up LAN automatically to prepare this computer.";
+    : "LAN access has not been configured.";
   const addressText = network.enabled ? address : "LAN access is off";
   const certificateStatus = network.certificateConfigured
     ? "Configured"
-    : "Set up automatically";
+    : "Not configured";
 
   el("content").innerHTML = `<div class="page-intro">
       <div>
@@ -886,7 +890,7 @@ async function settingsPage() {
         <div class="detail-row"><span>Port</span><strong>${network.port}</strong></div>
         <div class="detail-row"><span>HTTPS certificate</span><strong>${certificateStatus}</strong></div>
       </div>
-      <p class="subtle">Only share this address with people connected to your organisation Wi-Fi. The firewall rule is limited to the local subnet and Private or Domain networks. Do not expose the dashboard to the internet.</p>
+      <p class="subtle">Share this address only with people connected to your organisation's local network. The firewall rule is limited to the local subnet. Keep the dashboard off the public internet.</p>
     </section>
     <section class="panel">
       <div class="panel-heading"><h3>Organisation name</h3></div>
@@ -898,14 +902,13 @@ async function settingsPage() {
     <section class="panel">
       <div class="panel-heading"><h3>Administrator account</h3></div>
       <div class="detail-row"><span>Signed in as</span><strong>${escapeHtml(settings.administrator)}</strong></div>
-      <p class="subtle">Password reset and additional administrator roles are not included in this build.</p>
     </section>
     <section class="panel">
       <div class="panel-heading">
         <h3>Database backup</h3>
         <button id="backup" class="button secondary">Create backup</button>
       </div>
-      <p class="subtle">Creates a SQLite-consistent backup in the server data folder. Copy backups to organisation-controlled secure storage.</p>
+      <p class="subtle">Saves a consistent database copy in the server data folder. Keep the backup and its matching data-protection keys in secure storage.</p>
       <div class="warning-note">Keep the database, data protection keys and backups restricted to authorised server administrators.</div>
     </section>`;
 }

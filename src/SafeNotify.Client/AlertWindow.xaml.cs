@@ -40,21 +40,22 @@ public partial class AlertWindow : Window
         {
             Height = 470;
             Width = 700;
-            Shell.BorderBrush = new SolidColorBrush(Color.FromRgb(150, 0, 12));
-            Shell.Background = new SolidColorBrush(Color.FromRgb(255, 239, 240));
-            AlertStripe.Background = new SolidColorBrush(Color.FromRgb(191, 0, 18));
-            SeverityText.Foreground = new SolidColorBrush(Color.FromRgb(176, 0, 19));
-            TitleText.Foreground = new SolidColorBrush(Color.FromRgb(125, 0, 13));
-            AcknowledgeButton.Background = new SolidColorBrush(Color.FromRgb(174, 0, 18));
-            AcknowledgeButton.Content = "ACKNOWLEDGE EMERGENCY";
-            InstructionText.Text = "The alarm continues until you acknowledge receipt.";
+            Shell.BorderBrush = new SolidColorBrush(Color.FromRgb(125, 32, 40));
+            Shell.BorderThickness = new Thickness(2);
+            Shell.Background = new SolidColorBrush(Color.FromRgb(251, 233, 231));
+            AlertStripe.Background = new SolidColorBrush(Color.FromRgb(169, 40, 50));
+            SeverityText.Foreground = new SolidColorBrush(Color.FromRgb(125, 32, 40));
+            TitleText.Foreground = new SolidColorBrush(Color.FromRgb(91, 24, 30));
+            AcknowledgeButton.Background = new SolidColorBrush(Color.FromRgb(125, 32, 40));
+            AcknowledgeButton.Content = "Acknowledge emergency";
+            InstructionText.Text = "The alarm continues until you acknowledge this alert.";
         }
         else if (string.Equals(severity, "warning", StringComparison.OrdinalIgnoreCase))
         {
-            Shell.BorderBrush = new SolidColorBrush(Color.FromRgb(220, 145, 19));
-            AlertStripe.Background = new SolidColorBrush(Color.FromRgb(224, 145, 11));
-            SeverityText.Foreground = new SolidColorBrush(Color.FromRgb(160, 96, 0));
-            AcknowledgeButton.Background = new SolidColorBrush(Color.FromRgb(184, 111, 0));
+            Shell.BorderBrush = new SolidColorBrush(Color.FromRgb(167, 107, 10));
+            AlertStripe.Background = new SolidColorBrush(Color.FromRgb(167, 107, 10));
+            SeverityText.Foreground = new SolidColorBrush(Color.FromRgb(104, 67, 0));
+            AcknowledgeButton.Background = new SolidColorBrush(Color.FromRgb(138, 87, 0));
         }
         pulseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         pulseTimer.Tick += PulseTimer_Tick;
@@ -80,13 +81,13 @@ public partial class AlertWindow : Window
     public void SetAcknowledgementPending()
     {
         AcknowledgeButton.IsEnabled = false;
-        InstructionText.Text = "Recording your acknowledgement…";
+        InstructionText.Text = "Recording your acknowledgement...";
     }
 
     public void SetAcknowledgementFailed()
     {
         AcknowledgeButton.IsEnabled = true;
-        InstructionText.Text = "Could not record acknowledgement. Check the network and try again.";
+        InstructionText.Text = "Couldn't record your acknowledgement. Check the connection and try again.";
     }
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -161,12 +162,12 @@ public partial class AlertWindow : Window
     private async void Acknowledge_Click(object sender, RoutedEventArgs e)
     {
         AcknowledgeButton.IsEnabled = false;
-        InstructionText.Text = "Recording your acknowledgement…";
+        InstructionText.Text = "Recording your acknowledgement...";
         var succeeded = await acknowledge();
         if (!succeeded)
         {
             AcknowledgeButton.IsEnabled = true;
-            InstructionText.Text = "Could not record acknowledgement. Check the network and try again.";
+            InstructionText.Text = "Couldn't record your acknowledgement. Check the connection and try again.";
             return;
         }
         AllowClose();

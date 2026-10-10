@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <title>SafeNotify Admin</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles.css?v=20261010-2" />
   </head>
   <body>
     <div id="access" class="access-shell">
       <div class="access-brand">
         <div class="brand-mark">S</div>
         <div>
-          <strong>SafeNotify</strong><span>Organisation alert dashboard</span>
+          <strong>SafeNotify</strong><span>Organisation control desk</span>
         </div>
       </div>
       <section class="access-card">
@@ -46,7 +46,7 @@
         </form>
       </section>
       <p class="access-note">
-        Your dashboard and data stay on your organisation's network.
+        The server stores alert and device records for your organisation.
       </p>
     </div>
     <div id="app" class="app-shell hidden">
@@ -57,9 +57,9 @@
             ><strong>SafeNotify</strong><small>ADMIN CONSOLE</small></span
           ></a
         >
-        <div class="org-label" id="orgLabel">Your organisation</div>
-        <nav id="nav">
-          <button data-page="overview" class="active">Overview</button
+        <div class="org-label" id="orgLabel">Organisation</div>
+        <nav id="nav" aria-label="Main navigation">
+          <button data-page="overview" class="active">Dashboard</button
           ><button data-page="send">Send alert</button
           ><button data-page="requests">
             Device requests
@@ -71,7 +71,7 @@
           ><button data-page="settings">Settings</button>
         </nav>
         <div class="sidebar-footer">
-          <span class="online-dot"></span>Local server online<button
+          <span class="online-dot"></span>Dashboard connected<button
             id="logout"
             class="text-button"
           >
@@ -82,12 +82,12 @@
       <main class="main">
         <header class="topbar">
           <div>
-            <span class="eyebrow">SAFENOTIFY / ADMIN</span>
-            <h1 id="pageTitle">Overview</h1>
+            <span class="eyebrow">SAFENOTIFY / CONTROL DESK</span>
+            <h1 id="pageTitle">Dashboard</h1>
           </div>
           <div class="top-actions">
             <span class="server-pill"
-              ><span class="online-dot"></span>Server healthy</span
+              ><span class="online-dot"></span>Server online</span
             >
             <div id="adminEmail" class="avatar">A</div>
           </div>
@@ -96,6 +96,6 @@
       </main>
     </div>
     <div id="toast" class="toast"></div>
-    <script src="/app.js?v=20261010" defer></script>
+    <script src="/app.js?v=20261010-2" defer></script>
   </body>
 </html>
