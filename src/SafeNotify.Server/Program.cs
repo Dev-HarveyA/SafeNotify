@@ -61,20 +61,20 @@ builder.Services.AddScoped<IPasswordHasher<Administrator>, PasswordHasher<Admini
 builder.Services.AddAntiforgery(options => { options.HeaderName = "X-SafeNotify-CSRF"; options.Cookie.Name = "SafeNotify.Csrf"; options.Cookie.HttpOnly = true; options.Cookie.SecurePolicy = cookieSecurePolicy; options.Cookie.SameSite = SameSiteMode.Strict; });
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
- options.Cookie.Name = "SafeNotify.Session";
- options.Cookie.HttpOnly = true;
- options.Cookie.SecurePolicy = cookieSecurePolicy;
- options.Cookie.SameSite = SameSiteMode.Strict;
- options.SlidingExpiration = true;
- options.ExpireTimeSpan = TimeSpan.FromHours(8);
- options.Events.OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; };
- options.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
+    options.Cookie.Name = "SafeNotify.Session";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = cookieSecurePolicy;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.SlidingExpiration = true;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.Events.OnRedirectToLogin = context => { context.Response.StatusCode = 401; return Task.CompletedTask; };
+    options.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = 403; return Task.CompletedTask; };
 });
 builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
 {
- options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
- options.AddPolicy("public", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("public", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions { PermitLimit = 12, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true }));
 });
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<DevicePresence>();
@@ -90,25 +90,25 @@ using (var scope = app.Services.CreateScope())
 app.UseExceptionHandler();
 app.Use(async (context, next) =>
 {
- context.Response.Headers.XContentTypeOptions = "nosniff";
- context.Response.Headers.XFrameOptions = "DENY";
- context.Response.Headers["Referrer-Policy"] = "no-referrer";
- context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'";
- await next();
+    context.Response.Headers.XContentTypeOptions = "nosniff";
+    context.Response.Headers.XFrameOptions = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'";
+    await next();
 });
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.Use(async (context, next) =>
 {
- var path = context.Request.Path;
- var mutating = !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method);
- if (mutating && (path.StartsWithSegments("/api/admin") || path.Equals("/api/auth/logout")) && context.User.Identity?.IsAuthenticated == true)
- {
-  try { await context.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(context); }
-  catch (AntiforgeryValidationException) { context.Response.StatusCode = 400; await context.Response.WriteAsJsonAsync(new { error = "Invalid request token." }); return; }
- }
- await next();
+    var path = context.Request.Path;
+    var mutating = !HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method) && !HttpMethods.IsOptions(context.Request.Method);
+    if (mutating && (path.StartsWithSegments("/api/admin") || path.Equals("/api/auth/logout")) && context.User.Identity?.IsAuthenticated == true)
+    {
+        try { await context.RequestServices.GetRequiredService<IAntiforgery>().ValidateRequestAsync(context); }
+        catch (AntiforgeryValidationException) { context.Response.StatusCode = 400; await context.Response.WriteAsJsonAsync(new { error = "Invalid request token." }); return; }
+    }
+    await next();
 });
 app.UseAuthorization();
 app.UseDefaultFiles();

@@ -12,6 +12,9 @@ namespace SafeNotify.Client;
 
 public partial class AlertWindow : Window
 {
+    private const double EmergencySpeechAlarmVolume = 0.38;
+    private static readonly TimeSpan MessageSoundDuration = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan WarningSoundDuration = TimeSpan.FromMilliseconds(900);
     private readonly Func<Task<bool>> acknowledge;
     private readonly bool emergency;
     private readonly bool soundOwner;
@@ -63,7 +66,6 @@ public partial class AlertWindow : Window
     public void AllowClose()
     {
         closeAllowed = true;
-        StopAlarm();
     }
 
     public void SetMonitorBounds(int left, int top, int width, int height)
@@ -114,7 +116,7 @@ public partial class AlertWindow : Window
         }
         else SystemSounds.Asterisk.Play();
         if (!speakMessage) return;
-        if (!emergency) await Task.Delay(warning ? 900 : 500);
+        if (!emergency) await Task.Delay(warning ? WarningSoundDuration : MessageSoundDuration);
         await SpeakAlertAsync();
     }
 
@@ -124,7 +126,7 @@ public partial class AlertWindow : Window
         EventHandler<SpeakCompletedEventArgs>? completedHandler = null;
         try
         {
-            if (emergency) SetAlarmVolume(0.38);
+            if (emergency) SetAlarmVolume(EmergencySpeechAlarmVolume);
             speechSynthesizer = new SpeechSynthesizer();
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             completedHandler = (_, eventArgs) =>
@@ -187,7 +189,6 @@ public partial class AlertWindow : Window
             e.Cancel = true;
             return;
         }
-        pulseTimer.Stop();
         speechSynthesizer?.SpeakAsyncCancelAll();
         speechSynthesizer?.Dispose();
         speechSynthesizer = null;

@@ -69,9 +69,34 @@ Type: dirifempty; Name: "{userprograms}\SafeNotify"
 var
   ServerInfoPage: TWizardPage;
   ServerInfoMemo: TNewMemo;
+  ExistingDataPage: TInputOptionWizardPage;
+  ExistingVersion: string;
+  ExistingInstallationFound: Boolean;
+
+function ExistingServerDataDirectory: string;
+begin
+  Result := ExpandConstant('{localappdata}\SafeNotify\Server');
+end;
+
+function HasExistingInstallation: Boolean;
+begin
+  Result := RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{6EFC4427-27A0-407F-9FF5-4FA0A901A57C}_is1', 'DisplayVersion', ExistingVersion);
+  if not Result then
+    Result := DirExists(ExistingServerDataDirectory);
+end;
 
 procedure InitializeWizard;
 begin
+  ExistingVersion := '';
+  ExistingInstallationFound := HasExistingInstallation;
+  if ExistingVersion <> '' then
+    ExistingDataPage := CreateInputOptionPage(wpSelectComponents, 'Existing SafeNotify data found', 'SafeNotify ' + ExistingVersion + ' is already installed.', 'Replacing deletes the server database, security keys, and LAN settings under %LOCALAPPDATA%\SafeNotify\Server.', True, False)
+  else
+    ExistingDataPage := CreateInputOptionPage(wpSelectComponents, 'Existing SafeNotify data found', 'An earlier SafeNotify server data folder was found.', 'Replacing deletes the server database, security keys, and LAN settings under %LOCALAPPDATA%\SafeNotify\Server.', True, False);
+  ExistingDataPage.Add('Keep the existing organisation, devices, server settings, and security keys');
+  ExistingDataPage.Add('Replace them with a blank setup');
+  ExistingDataPage.SelectedValueIndex := 0;
+
   ServerInfoPage := CreateCustomPage(wpSelectComponents, 'Server installation and first setup', 'Where SafeNotify installs the server and how to get started');
   ServerInfoMemo := TNewMemo.Create(WizardForm);
   ServerInfoMemo.Parent := ServerInfoPage.Surface;
@@ -87,7 +112,6 @@ begin
   ServerInfoMemo.TabStop := False;
   ServerInfoMemo.Lines.Add('Server program location:');
   ServerInfoMemo.Lines.Add('');
-  ServerInfoMemo.Lines.Add('');
   ServerInfoMemo.Lines.Add('When installation finishes, the server starts automatically if you selected the server component. If you enabled automatic startup, it will also start when this Windows account signs in.');
   ServerInfoMemo.Lines.Add('');
   ServerInfoMemo.Lines.Add('Open Start menu > SafeNotify > SafeNotify Server Dashboard, or visit http://127.0.0.1:5080 on this computer. On first use, create your organisation and administrator account.');
@@ -101,10 +125,30 @@ begin
     ServerInfoMemo.Lines[1] := WizardDirValue + '\server\SafeNotify.Server.exe';
 end;
 
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := ((PageID = ExistingDataPage.ID) and ((not ExistingInstallationFound) or (not WizardIsComponentSelected('server')))) or
+    ((PageID = ServerInfoPage.ID) and not WizardIsComponentSelected('server'));
+end;
+
+procedure ResetExistingServerData;
+var
+  ExitCode: Integer;
+begin
+  if ExistingDataPage.SelectedValueIndex <> 1 then
+    Exit;
+
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM SafeNotify.Server.exe', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
+  if not DelTree(ExistingServerDataDirectory, '', True, True) and DirExists(ExistingServerDataDirectory) then
+    RaiseException('SafeNotify could not replace the existing server data. Close the server and try again.');
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then
   begin
+    if WizardIsComponentSelected('server') and ExistingInstallationFound then
+      ResetExistingServerData;
     if not WizardIsComponentSelected('client') or not WizardIsTaskSelected('startclient') then
       RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'SafeNotify Client');
     if not WizardIsComponentSelected('server') or not WizardIsTaskSelected('startserver') then
