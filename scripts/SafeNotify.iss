@@ -146,6 +146,9 @@ procedure ResetExistingServerData;
 var
   ExitCode: Integer;
 begin
+  if not WizardIsComponentSelected('server') or not ExistingInstallationFound then
+    Exit;
+
   if ExistingDataPage.SelectedValueIndex <> 1 then
     Exit;
 

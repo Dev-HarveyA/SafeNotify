@@ -54,21 +54,6 @@ SafeNotify keeps the server database and data-protection keys under `%LOCALAPPDA
 
 To uninstall, open **Windows Settings → Apps → Installed apps → SafeNotify**, or use **Start menu → SafeNotify → Uninstall SafeNotify**. Uninstalling removes the program but keeps organisation data. To start with a blank organisation, choose the replace option when reinstalling.
 
-## Create the v1.0.6 GitHub release
-
-The release workflow builds the Windows installer and attaches it to a GitHub Release when the `v1.0.6` tag is pushed. First commit and push the changes you want included on `main`, then tag that commit. GitHub Actions builds the installer from the commit the tag points to.
-
-In GitHub Desktop, open **History**, right-click the commit you want to release, and choose **Create Tag**. Enter **v1.0.6**, then push to origin. GitHub Desktop pushes a tag you create with its associated commit by default. See [GitHub Desktop tag instructions](https://docs.github.com/en/desktop/managing-commits/managing-tags-in-github-desktop).
-
-Or run these commands from the repository after committing and pushing `main`:
-
-```powershell
-git tag v1.0.6
-git push origin v1.0.6
-```
-
-Check [Actions](https://github.com/Dev-HarveyA/SafeNotify/actions) for the build. When it succeeds, the installer appears under **Assets** on the [Releases page](https://github.com/Dev-HarveyA/SafeNotify/releases). If the workflow fails and the tag points to the right commit, fix the cause and re-run the failed workflow from Actions.
-
 ## Build from source
 
 Building requires Windows, the .NET 10 SDK, and Inno Setup 6. To build the installer locally:
