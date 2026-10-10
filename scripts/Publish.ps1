@@ -8,7 +8,6 @@ $serverProject = Join-Path $root "src\SafeNotify.Server\SafeNotify.Server.csproj
 $clientProject = Join-Path $root "src\SafeNotify.Client\SafeNotify.Client.csproj"
 $serverOutput = Join-Path $root "publish\preproduction\server"
 $clientOutput = Join-Path $root "publish\preproduction\client"
-$solution = Join-Path $root "SafeNotify.slnx"
 $publishDirectory = Join-Path $root "publish\preproduction"
 if (Test-Path -LiteralPath $publishDirectory) {
     $resolvedPublishDirectory = [System.IO.Path]::GetFullPath($publishDirectory)
@@ -18,11 +17,21 @@ if (Test-Path -LiteralPath $publishDirectory) {
     }
     Remove-Item -LiteralPath $resolvedPublishDirectory -Recurse -Force
 }
-for ($attempt = 1; $attempt -le 4; $attempt++) {
-    dotnet restore $solution --runtime $Runtime --disable-parallel -p:NuGetAudit=false
-    if ($LASTEXITCODE -eq 0) { break }
-    if ($attempt -eq 4) { throw "Package restore failed with exit code $LASTEXITCODE." }
-    Start-Sleep -Seconds ([Math]::Min(60, 10 * $attempt))
+foreach ($project in @($serverProject, $clientProject)) {
+    $restored = $false
+    for ($attempt = 1; $attempt -le 4; $attempt++) {
+        dotnet restore $project --runtime $Runtime --disable-parallel -p:NuGetAudit=false
+        if ($LASTEXITCODE -eq 0) {
+            $restored = $true
+            break
+        }
+        if ($attempt -lt 4) {
+            Start-Sleep -Seconds ([Math]::Min(60, 10 * $attempt))
+        }
+    }
+    if (-not $restored) {
+        throw "Package restore failed for $project with exit code $LASTEXITCODE."
+    }
 }
 dotnet publish $serverProject --configuration Release --runtime $Runtime --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false --no-restore --output $serverOutput
 if ($LASTEXITCODE -ne 0) { throw "Server publishing failed with exit code $LASTEXITCODE." }
