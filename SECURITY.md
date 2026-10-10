@@ -11,6 +11,7 @@ Do not post exploitable vulnerability details in a public issue. Use GitHub's pr
 - The server binds to loopback by default and requires a TLS certificate for a non-loopback bind.
 - Admin sessions use HTTP-only, Secure, SameSite cookies with an eight-hour lifetime.
 - Admin write routes validate antiforgery tokens.
+- The dashboard content security policy allows scripts and styles from the server origin and blocks inline scripts and styles.
 - Passwords are hashed with ASP.NET Core's password hasher.
 - Device and join credentials are random; only hashes are used for authentication.
 - The device credential retained by the server for post-approval recovery is protected by ASP.NET Core Data Protection.
@@ -24,6 +25,6 @@ Use a certificate trusted by client devices, restrict the server port with the o
 
 ## Known gaps
 
-Public setup, login, and device claim routes have a fixed per-IP rate limit. The server has no database migration framework, multi-administrator account recovery, installer signature, secure update channel, or independent penetration test. The client is a foreground desktop app and does not yet have a service/session broker for reliable background delivery. See the limitations in the README.
+Public setup, login, and device claim routes have a fixed per-IP rate limit. The server has no multi-administrator account recovery, installer signature, secure update channel, or independent penetration test. The client is a foreground desktop app and does not yet have a service/session broker for reliable background delivery. See the limitations in the README.
 
 

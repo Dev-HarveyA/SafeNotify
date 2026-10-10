@@ -27,11 +27,11 @@ Alerts have one delivery row per recipient device. The server records a connecti
 - `Delivery`: per-device delivery, acknowledgement, and resolution state.
 - `AuditEntry`: administrative and device actions.
 
-SQLite timestamps are stored as UTC ticks so range comparisons and sorting remain consistent with SQLite. The current database uses EF Core `EnsureCreated`; schema migration scripts are a release requirement before changing a deployed schema.
+SQLite timestamps are stored as UTC ticks so range comparisons and sorting remain consistent with SQLite. EF Core migrations manage schema updates. When the server opens a database created by an earlier version, it checks the existing table and column layout and records the matching migration history before applying later migrations. An incomplete legacy schema stops startup instead of being silently replaced.
 
 ## Network boundaries
 
-The server binds only to `127.0.0.1:5080` by default. A non-loopback address requires a configured TLS certificate. Use an organisation-managed certificate and restrict firewall access to the organisation's device networks. Discovery is intentionally not an authorization mechanism. In this build, the operator enters the server address manually.
+The server binds only to `127.0.0.1:5080` by default. A non-loopback address requires a configured TLS certificate. LAN mode adds a firewall rule limited to the local subnet and requires the certificate to be trusted by client devices. Use an organisation-managed certificate and restrict firewall access to the organisation's device networks. Discovery is intentionally not an authorization mechanism. In this build, the operator enters the server address manually.
 
 ## Runtime files
 

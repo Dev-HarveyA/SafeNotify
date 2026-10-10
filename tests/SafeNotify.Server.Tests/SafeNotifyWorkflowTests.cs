@@ -55,7 +55,7 @@ public sealed class SafeNotifyWorkflowTests
         var assignment = await client.PutAsJsonAsync("/api/admin/devices/1/group", new { groupId });
         Assert.Equal(HttpStatusCode.OK, assignment.StatusCode);
 
-        var alert = await client.PostAsJsonAsync("/api/admin/alerts", new { title = "Drill notice", message = "Proceed to the assembly point.", severity = "emergency", audience = "All", groupId = (int?)null, deviceId = (int?)null, expiresMinutes = 60 });
+        var alert = await client.PostAsJsonAsync("/api/admin/alerts", new { title = "Drill notice", message = "Proceed to the assembly point.", severity = "emergency", audience = "All", groupId = (int?)null, deviceId = (int?)null, expiresMinutes = 60, speakMessage = true });
         Assert.Equal(HttpStatusCode.Created, alert.StatusCode);
         var alertRecord = await alert.Content.ReadFromJsonAsync<JsonElement>();
         var alertId = alertRecord.GetProperty("id").GetInt32();
@@ -64,6 +64,7 @@ public sealed class SafeNotifyWorkflowTests
         var deliveries = await client.GetFromJsonAsync<JsonElement[]>("/api/client/alerts");
         Assert.NotNull(deliveries);
         Assert.Single(deliveries);
+        Assert.True(deliveries[0].GetProperty("speakMessage").GetBoolean());
         var deliveryId = deliveries[0].GetProperty("id").GetInt32();
         var acknowledgement = await client.PostAsync($"/api/client/deliveries/{deliveryId}/acknowledge", null);
         Assert.Equal(HttpStatusCode.OK, acknowledgement.StatusCode);

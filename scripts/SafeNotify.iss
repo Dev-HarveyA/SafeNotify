@@ -1,5 +1,5 @@
 #ifndef AppVersion
-#define AppVersion "1.0.4"
+#define AppVersion "1.0.6"
 #endif
 
 [Setup]
@@ -9,6 +9,7 @@ AppVersion={#AppVersion}
 AppPublisher=SafeNotify contributors
 DefaultDirName={localappdata}\Programs\SafeNotify
 DefaultGroupName=SafeNotify
+UsePreviousTasks=yes
 OutputDir=..\publish\installer
 OutputBaseFilename=SafeNotify-Setup-{#AppVersion}-win-x64
 ArchitecturesAllowed=x64compatible
@@ -36,8 +37,8 @@ Name: "client"; Description: "Windows alert client"; Types: full client-only
 Name: "server"; Description: "Organisation server and dashboard"; Types: full server-only
 
 [Tasks]
-Name: "startclient"; Description: "Start the alert client when I sign in to Windows"; GroupDescription: "Automatic startup:"; Components: client; Flags: checkedonce
-Name: "startserver"; Description: "Start the organisation server when I sign in to Windows"; GroupDescription: "Automatic startup:"; Components: server; Flags: checkedonce
+Name: "startclient"; Description: "Start the alert client when I sign in to Windows"; GroupDescription: "Automatic startup:"; Components: client
+Name: "startserver"; Description: "Start the organisation server when I sign in to Windows"; GroupDescription: "Automatic startup:"; Components: server
 
 [Files]
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
@@ -86,18 +87,25 @@ begin
 end;
 
 procedure InitializeWizard;
+var
+  PreviousPageID: Integer;
 begin
   ExistingVersion := '';
   ExistingInstallationFound := HasExistingInstallation;
-  if ExistingVersion <> '' then
-    ExistingDataPage := CreateInputOptionPage(wpSelectComponents, 'Existing SafeNotify data found', 'SafeNotify ' + ExistingVersion + ' is already installed.', 'Replacing deletes the server database, security keys, and LAN settings under %LOCALAPPDATA%\SafeNotify\Server.', True, False)
-  else
-    ExistingDataPage := CreateInputOptionPage(wpSelectComponents, 'Existing SafeNotify data found', 'An earlier SafeNotify server data folder was found.', 'Replacing deletes the server database, security keys, and LAN settings under %LOCALAPPDATA%\SafeNotify\Server.', True, False);
-  ExistingDataPage.Add('Keep the existing organisation, devices, server settings, and security keys');
-  ExistingDataPage.Add('Replace them with a blank setup');
-  ExistingDataPage.SelectedValueIndex := 0;
+  PreviousPageID := wpSelectComponents;
+  if ExistingInstallationFound then
+  begin
+    if ExistingVersion <> '' then
+      ExistingDataPage := CreateInputOptionPage(PreviousPageID, 'Existing SafeNotify data found', 'SafeNotify ' + ExistingVersion + ' is already installed.', 'Replacing deletes the server database, security keys, and LAN settings under %LOCALAPPDATA%\SafeNotify\Server.', True, False)
+    else
+      ExistingDataPage := CreateInputOptionPage(PreviousPageID, 'Existing SafeNotify data found', 'An earlier SafeNotify server data folder was found.', 'Replacing deletes the server database, security keys, and LAN settings under %LOCALAPPDATA%\SafeNotify\Server.', True, False);
+    ExistingDataPage.Add('Keep the existing organisation, devices, server settings, and security keys');
+    ExistingDataPage.Add('Replace them with a blank setup');
+    ExistingDataPage.SelectedValueIndex := 0;
+    PreviousPageID := ExistingDataPage.ID;
+  end;
 
-  ServerInfoPage := CreateCustomPage(wpSelectComponents, 'Server installation and first setup', 'Where SafeNotify installs the server and how to get started');
+  ServerInfoPage := CreateCustomPage(PreviousPageID, 'Server installation and first setup', 'Where SafeNotify installs the server and how to get started');
   ServerInfoMemo := TNewMemo.Create(WizardForm);
   ServerInfoMemo.Parent := ServerInfoPage.Surface;
   ServerInfoMemo.Left := 0;
@@ -127,8 +135,11 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  Result := ((PageID = ExistingDataPage.ID) and ((not ExistingInstallationFound) or (not WizardIsComponentSelected('server')))) or
-    ((PageID = ServerInfoPage.ID) and not WizardIsComponentSelected('server'));
+  Result := False;
+  if ExistingInstallationFound and (PageID = ExistingDataPage.ID) and not WizardIsComponentSelected('server') then
+    Result := True;
+  if (PageID = ServerInfoPage.ID) and not WizardIsComponentSelected('server') then
+    Result := True;
 end;
 
 procedure ResetExistingServerData;

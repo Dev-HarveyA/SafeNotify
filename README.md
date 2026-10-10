@@ -1,123 +1,99 @@
 # SafeNotify
 
-SafeNotify is a self-hosted alert and messaging system for Windows organisations. An administrator runs the server and dashboard. Windows clients request access, wait for approval, and receive messages, warnings, and emergency alerts.
+[![Build and tests](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/ci.yml/badge.svg)](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Dev-HarveyA/SafeNotify?label=latest%20release)](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## [Download the Windows installer from GitHub Releases](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
+**A self-hosted alert and messaging system for Windows schools and workplaces.** Administrators manage the organisation from a local dashboard. Approved Windows clients receive messages, warnings, and emergency alerts.
 
-On the Releases page, open the latest version and download `SafeNotify-Setup-x.y.z-win-x64.exe` from **Assets**. Run the installer to install SafeNotify or upgrade an existing installation. Choose **Client and server**, **Client only**, or **Server only** in setup.
+> SafeNotify is an early development project. It has not been certified or independently assessed for life-safety use. Do not use it instead of approved emergency procedures or certified alarm systems.
 
-If there is no installer under **Assets**, a release has not finished building yet. Releases are created when a `vMAJOR.MINOR.PATCH` version tag is pushed. Check [release build status](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/release.yml) for progress or errors. SafeNotify does not install updates automatically; download and run each new installer to upgrade.
+## Download
 
-**New to SafeNotify?** Install the Windows installer above. The source-build instructions below are for developers.
+### [Get the latest Windows installer](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
 
-> SafeNotify is an early development project. It is not certified or independently assessed for life-safety use. Do not use it as a replacement for approved emergency procedures or certified alarm systems.
+Open the latest release, find **Assets**, and download `SafeNotify-Setup-x.y.z-win-x64.exe`. Run the installer and choose **Client and server**, **Client only**, or **Server only**.
 
-## What it includes
+If the installer is missing from Assets, check the [release workflow](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/release.yml). GitHub builds it when a version tag is pushed. Updates are installed by downloading and running the newer installer.
 
-- ASP.NET Core server, web dashboard, SQLite database, and SignalR device channel.
-- Windows desktop client built with WPF.
-- Administrator approval for new devices, device management, groups, and audit history.
-- Message, warning, and emergency alert delivery with acknowledgement and resolution tracking.
-- Optional per-alert text-to-speech using installed Windows voices; messages and warnings speak after their sound, and emergencies speak over a quieter alarm that returns to full volume afterward.
-- Local-only server binding by default. LAN binding requires HTTPS.
-- MIT licence.
+## What is included
 
-## Requirements
+- A Windows alert client and self-hosted ASP.NET Core server with a web dashboard.
+- Administrator approval for devices, groups, and access to alerts.
+- Message, warning, and emergency alerts with acknowledgements and resolution tracking.
+- Optional text-to-speech for each alert.
+- Local-only server access by default, with optional HTTPS-secured LAN access.
+- SQLite storage, audit history, and database backups.
 
-- Windows 10 or Windows 11.
-- The prebuilt installer includes what SafeNotify needs to run.
-- .NET 10 SDK and Inno Setup 6 are needed only to build from source.
-- A trusted TLS certificate for use across a LAN.
+## Install and get started
 
-## Try SafeNotify on one computer
+1. Download and run the installer linked above. It installs for your Windows account and does not need administrator access for the basic setup.
+2. Choose which components to install. On the server computer, select **Client and server** or **Server only**. On other computers, select **Client only**.
+3. Leave the automatic startup options selected if you want each installed component to start when you sign in. These entries appear in **Task Manager → Startup apps**. The client needs a signed-in Windows session to display alerts.
+4. On the server computer, open **Start menu → SafeNotify → SafeNotify Server Dashboard**, or visit [http://127.0.0.1:5080](http://127.0.0.1:5080). On first use, create your organisation and administrator account. Use a password with at least 14 characters.
+5. Open the SafeNotify client. Choose **Find organisation**, then **Request to join**. Approve the request from **Device requests** in the dashboard.
 
-1. Install the .NET 10 SDK and open PowerShell in the repository folder.
-2. Double-click `Start-Server.bat` in the repository folder. A console window shows the server status. Leave that window open while using SafeNotify. To stop it, press **Ctrl+C** in the server window, or double-click `Stop-Server.bat`.
+If setup finds an earlier SafeNotify installation or server data folder, it asks whether to keep the existing organisation or replace the server data with a blank setup. Replacement removes the database, security keys, and LAN settings from `%LOCALAPPDATA%\SafeNotify\Server`. Logs are kept.
 
-   You can also start it from PowerShell:
+The server runs without a console window. Its program is installed to `%LOCALAPPDATA%\Programs\SafeNotify\server`, and logs are stored in `%LOCALAPPDATA%\SafeNotify\Logs`.
 
-   ```powershell
-   .\scripts\Start-Server.ps1
-   ```
+## Use SafeNotify across your LAN
 
-3. Open [http://127.0.0.1:5080](http://127.0.0.1:5080). On first use, create the organisation and administrator account. Use a password with at least 14 characters. Initial setup closes after the account is created.
-4. Open a second PowerShell window in the repository folder and start the client:
+The server listens only on the server computer by default. To allow approved clients on the same Wi-Fi or Ethernet network:
 
-   ```powershell
-   .\scripts\Start-Client.ps1
-   ```
+1. On the server computer, open **Dashboard → Settings → LAN access** and select **Set up LAN automatically**.
+2. Approve the Windows Firewall prompt. SafeNotify creates HTTPS certificates and limits its firewall rule to the local network.
+3. Download the public `SafeNotify-LAN.cer` certificate. On each client computer, open it, select **Current User**, choose **Place all certificates in the following store**, then select **Trusted Root Certification Authorities**.
+4. In the client, use the HTTPS address shown in the dashboard, find the organisation, request to join, and have an administrator approve the device.
 
-5. In the client, choose **Find organisation**, then **Request to join**. In the dashboard, open **Device requests** and approve the request. The client will then connect and receive alerts.
+Do not expose the dashboard to the internet. The certificate file is public, but never share the server's private key. For a workplace deployment, use a certificate issued by your organisation's certificate authority.
 
-The client defaults to `http://127.0.0.1:5080`, which works only on the same computer. If PowerShell blocks a script, start it with a one-time execution policy override:
+## Data, backups, and uninstall
+
+SafeNotify keeps the server database and data-protection keys under `%LOCALAPPDATA%\SafeNotify\Server`. Keep them together in backups and run the server under the same Windows account that created them. Use **Settings → Database backup** to create a consistent database backup, then copy it and the matching keys to access-controlled storage.
+
+To uninstall, open **Windows Settings → Apps → Installed apps → SafeNotify**, or use **Start menu → SafeNotify → Uninstall SafeNotify**. Uninstalling removes the program but keeps organisation data. To start with a blank organisation, choose the replace option when reinstalling.
+
+## Create the v1.0.6 GitHub release
+
+The release workflow builds the Windows installer and attaches it to a GitHub Release when the `v1.0.6` tag is pushed. First commit and push the changes you want included on `main`, then tag that commit. GitHub Actions builds the installer from the commit the tag points to.
+
+In GitHub Desktop, open **History**, right-click the commit you want to release, and choose **Create Tag**. Enter **v1.0.6**, then push to origin. GitHub Desktop pushes a tag you create with its associated commit by default. See [GitHub Desktop tag instructions](https://docs.github.com/en/desktop/managing-commits/managing-tags-in-github-desktop).
+
+Or run these commands from the repository after committing and pushing `main`:
+
+```powershell
+git tag v1.0.6
+git push origin v1.0.6
+```
+
+Check [Actions](https://github.com/Dev-HarveyA/SafeNotify/actions) for the build. When it succeeds, the installer appears under **Assets** on the [Releases page](https://github.com/Dev-HarveyA/SafeNotify/releases). If the workflow fails and the tag points to the right commit, fix the cause and re-run the failed workflow from Actions.
+
+## Build from source
+
+Building requires Windows, the .NET 10 SDK, and Inno Setup 6. To build the installer locally:
+
+```powershell
+.\scripts\Build-Installer.ps1 -Version 1.0.6
+```
+
+The installer is written to `publish\installer\SafeNotify-Setup-1.0.6-win-x64.exe`. Published binaries, installers, local databases, keys, and certificates are excluded from Git.
+
+To run from source for development, open PowerShell in the repository folder. Start the server in one window:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Server.ps1
 ```
 
-Server data is stored under `%LOCALAPPDATA%\SafeNotify\Server`. It contains the database and the DPAPI-protected key ring. Keep these files together in backups and run the server under the same Windows account that created them.
-
-## Install SafeNotify on Windows
-
-Most users should download the installer from [the latest GitHub Release](https://github.com/Dev-HarveyA/SafeNotify/releases/latest). The following steps are for building the installer yourself.
-
-On the build computer, install Inno Setup 6. With WinGet:
+Open a second window and start the client:
 
 ```powershell
-winget install --id JRSoftware.InnoSetup --exact
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-Client.ps1
 ```
 
-Then build the installer from the repository folder:
+Stop the server with **Ctrl+C** in its window. The source server uses `http://127.0.0.1:5080` by default. To move existing source-run data to the installed server, stop the source server and run `.\scripts\Migrate-ExistingData.ps1` once.
 
-```powershell
-.\scripts\Build-Installer.ps1
-```
-
-The installer is created at `publish\installer\SafeNotify-Setup-x.y.z-win-x64.exe`. It installs per-user without administrator rights. Choose client-only, server-only, or both. Setup creates Start menu shortcuts and lets you enable automatic startup for each selected component. Startup runs when the installing Windows user signs in. The alert client needs an interactive sign-in to show alerts.
-
-The installer shows the server executable location and first-run instructions before installation. If it finds an earlier SafeNotify installation or server data folder, it asks whether to keep the existing organisation or replace the server data with a blank setup. Replacing removes the database, security keys, and LAN settings from `%LOCALAPPDATA%\SafeNotify\Server`; the logs remain. After installation, open **Start menu → SafeNotify → SafeNotify Server Dashboard**, or visit [http://127.0.0.1:5080](http://127.0.0.1:5080) on the server computer. On first use, create the organisation and administrator account. The installed server program is `%LOCALAPPDATA%\Programs\SafeNotify\server\SafeNotify.Server.exe`. It runs without a console window and writes logs to `%LOCALAPPDATA%\SafeNotify\Logs`. Its configuration is in `%LOCALAPPDATA%\Programs\SafeNotify\server\appsettings.json`.
-
-To uninstall, open **Windows Settings → Apps → Installed apps → SafeNotify → Uninstall**, or use **Start menu → SafeNotify → Uninstall SafeNotify**. The uninstaller stops the running client and server and removes the program files. It keeps the organisation database, certificates, and keys under `%LOCALAPPDATA%\SafeNotify` so an uninstall or upgrade does not erase your setup. To start over with a blank organisation, stop SafeNotify and remove that data folder separately.
-
-The installer is unsigned. Windows may show a SmartScreen warning. Sign installers with an organisation-controlled code-signing certificate before distributing them to other people. Do not upload the generated installer or published binaries as part of the source repository; publish signed installers separately as GitHub Releases.
-
-## Use SafeNotify across a LAN
-
-The server binds to `127.0.0.1` by default. To set up a small LAN, connect the server and client computers to the same Wi-Fi or Ethernet network, then open **Dashboard → Settings → LAN access** and select **Set up LAN automatically**. Confirm the prompt to create and trust a local certificate authority for your Windows account. SafeNotify creates a server HTTPS certificate for the current network addresses, configures LAN mode, and adds a Windows Firewall rule limited to the local subnet and Private or Domain networks. Approve the Windows Firewall prompt when it appears. The dashboard then opens at its HTTPS address.
-
-SafeNotify downloads `SafeNotify-LAN.cer`. The server trusts the certificate for the current Windows user. Install the public certificate on each client computer:
-
-1. Open the downloaded `.cer` file.
-2. Select **Current User** when Windows asks where to install it.
-3. Choose **Place all certificates in the following store**, select **Trusted Root Certification Authorities**, and finish the wizard.
-4. Open the HTTPS address shown by SafeNotify. In the client, enter the same address, find the organisation, and request to join. Approve the request in **Device requests**.
-
-The certificate contains no private key. Never share the server's private key or upload it to GitHub. A self-signed certificate is for a controlled LAN; each Windows user must explicitly trust its public certificate. Reserve the server's IP address in the router so the certificate and connection address remain valid. To turn LAN access off, use the LAN access control in Settings. SafeNotify removes its firewall rule, returns to loopback binding, and restarts. Do not expose the dashboard to the internet.
-
-For a workplace deployment, use a certificate from your organisation's certificate authority instead. Install the certificate and private key in the server user's **Current User → Personal** certificate store, and install the issuing certificate chain on each client computer.
-
-## Troubleshooting
-
-- **The client cannot find the organisation:** Confirm the server is running. `http://127.0.0.1:5080` works only on the server computer. A client on another computer must use the server's HTTPS name and port.
-- **Request to join is unavailable:** First choose **Find organisation** and wait for the server to be found. Then submit the request and approve it in the dashboard's **Device requests** page.
-- **The request is pending:** The administrator must approve it. Keep the client open and connected while approval is pending.
-- **A server error appears:** Check `%LOCALAPPDATA%\SafeNotify\Logs\server-yyyyMMdd.log` on the server computer. Do not post database files, key-ring files, certificates, or credentials in a public issue.
-- **The server does not start after sign-in:** Check that SafeNotify Server is enabled in Windows Startup Apps and review the server log folder above.
-
-## Move existing development data to the installer
-
-If you already ran SafeNotify from the source folder and want to keep its organisation, devices, and approvals when switching to the installer:
-
-1. Stop the source server.
-2. Run this once from the repository folder:
-
-   ```powershell
-   .\scripts\Migrate-ExistingData.ps1
-   ```
-
-The script copies the database consistently and copies its matching DPAPI key ring to `%LOCALAPPDATA%\SafeNotify\Server`. The source data remains in place. Do not upload either copy to GitHub.
-
-## Build and run the checks
+Run the build and test checks with:
 
 ```powershell
 dotnet restore .\SafeNotify.slnx
@@ -125,39 +101,20 @@ dotnet build .\SafeNotify.slnx --configuration Release
 dotnet test .\SafeNotify.slnx --configuration Release
 ```
 
-To create self-contained Windows x64 application files, run `.\scripts\Publish.ps1`. To create the installer, run `.\scripts\Build-Installer.ps1`; it publishes the applications as part of the build.
-
 ## Repository layout
 
-| Path | Contents |
+| Location | Purpose |
 | --- | --- |
-| `src/SafeNotify.Server` | ASP.NET Core server, API, dashboard, and SQLite models |
-| `src/SafeNotify.Client` | WPF Windows client and alert windows |
-| `tests/SafeNotify.Server.Tests` | Server API workflow tests |
-| `scripts` | Development launchers, data migration, publishing, and installer build |
-| `Start-Server.bat`, `Stop-Server.bat` | Start and stop the source server on Windows |
-| `config` | Example configuration |
+| `src/SafeNotify.Server` | Server, dashboard, API, and SQLite data model |
+| `src/SafeNotify.Client` | Windows client and alert windows |
+| `tests/SafeNotify.Server.Tests` | Server workflow tests |
+| `scripts` | Development launch, migration, publishing, and installer scripts |
+| `config` | Example server configuration |
 | `docs` | Architecture notes |
-| `.github/workflows` | Windows build and test workflow |
-
-## Data, backups, and recovery
-
-The server stores `safenotify.db` and its data-protection keys beneath `%LOCALAPPDATA%\SafeNotify\Server`. Back them up together to access-controlled storage. A database restored without its matching key ring cannot decrypt protected device credentials. Use **Settings → Database backup** for a consistent SQLite backup, and restore only while the server is stopped.
-
-The repository ignores local databases, key rings, certificates, build outputs, and installer files. Keep real organisation data and private certificates out of GitHub.
-
-## Known limitations
-
-- The database schema is initialized with EF Core `EnsureCreated`; there is no schema migration system yet.
-- Only one initial administrator account is supported. There is no account recovery flow.
-- Network discovery, secure update delivery, and installer signing are not configured.
-- The client is a foreground Windows app. It needs a signed-in user session and has no service/session broker or tray mode.
-- SafeNotify has not had an independent security, reliability, or multi-computer deployment assessment.
-
-Review [SECURITY.md](SECURITY.md) and [docs/architecture.md](docs/architecture.md) before exposing a server to a LAN.
-
-Pushing a version tag such as `v1.2.0` starts the Windows release workflow, builds the installer, and attaches it to a GitHub Release.
+| `.github/workflows` | Continuous integration and release builds |
 
 ## Licence
 
-SafeNotify is distributed under the MIT License. See [LICENSE](LICENSE).
+SafeNotify is released under the [MIT License](LICENSE).
+
+Review [SECURITY.md](SECURITY.md) and [docs/architecture.md](docs/architecture.md) before exposing a server to a LAN.

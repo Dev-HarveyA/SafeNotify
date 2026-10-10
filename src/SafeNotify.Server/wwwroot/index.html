@@ -1,14 +1,101 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
-<title>SafeNotify Admin</title>
-<link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-<div id="access" class="access-shell"><div class="access-brand"><div class="brand-mark">S</div><div><strong>SafeNotify</strong><span>Local. Secure. Reliable.</span></div></div><section class="access-card"><p class="eyebrow">ORGANISATION ADMINISTRATION</p><h1 id="accessTitle">Welcome back</h1><p id="accessIntro" class="muted">Sign in to your local alert dashboard.</p><form id="accessForm"><label id="organisationField" class="hidden">Organisation name<input name="organisation" autocomplete="organization" minlength="2" maxlength="120"></label><label>Email address<input name="email" type="email" autocomplete="username" required></label><label>Password<input name="password" type="password" autocomplete="current-password" minlength="14" required></label><button class="button primary wide" type="submit">Continue</button><p id="accessError" class="form-error"></p></form></section><p class="access-note">Your dashboard and data stay on your organisation's network.</p></div>
-<div id="app" class="app-shell hidden"><aside class="sidebar"><a class="sidebar-brand" href="#overview"><span class="brand-mark">S</span><span><strong>SafeNotify</strong><small>ADMIN CONSOLE</small></span></a><div class="org-label" id="orgLabel">Your organisation</div><nav id="nav"><button data-page="overview" class="active"><span>◫</span>Overview</button><button data-page="send"><span>➤</span>Send alert</button><button data-page="requests"><span>◉</span>Device requests <b id="requestBadge" class="badge hidden">0</b></button><button data-page="devices"><span>▣</span>Devices</button><button data-page="groups"><span>⊞</span>Groups</button><button data-page="history"><span>◷</span>Alert history</button><button data-page="audit"><span>☷</span>Audit log</button><button data-page="settings"><span>⚙</span>Settings</button></nav><div class="sidebar-footer"><span class="online-dot"></span>Local server online<button id="logout" class="text-button">Sign out</button></div></aside><main class="main"><header class="topbar"><div><span class="eyebrow">SAFENOTIFY / ADMIN</span><h1 id="pageTitle">Overview</h1></div><div class="top-actions"><span class="server-pill"><span class="online-dot"></span>Server healthy</span><div id="adminEmail" class="avatar">A</div></div></header><div id="content" class="content"></div></main></div><div id="toast" class="toast"></div><script src="/app.js" defer></script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>SafeNotify Admin</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="access" class="access-shell">
+      <div class="access-brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <strong>SafeNotify</strong><span>Organisation alert dashboard</span>
+        </div>
+      </div>
+      <section class="access-card">
+        <p class="eyebrow">ORGANISATION ADMINISTRATION</p>
+        <h1 id="accessTitle">Administrator sign in</h1>
+        <p id="accessIntro" class="muted">
+          Sign in to your local alert dashboard.
+        </p>
+        <form id="accessForm">
+          <label id="organisationField" class="hidden"
+            >Organisation name<input
+              name="organisation"
+              autocomplete="organization"
+              minlength="2"
+              maxlength="120" /></label
+          ><label
+            >Email address<input
+              name="email"
+              type="email"
+              autocomplete="username"
+              required /></label
+          ><label
+            >Password<input
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              minlength="14"
+              required /></label
+          ><button class="button primary wide" type="submit">Continue</button>
+          <p id="accessError" class="form-error"></p>
+        </form>
+      </section>
+      <p class="access-note">
+        Your dashboard and data stay on your organisation's network.
+      </p>
+    </div>
+    <div id="app" class="app-shell hidden">
+      <aside class="sidebar">
+        <a class="sidebar-brand" href="#overview"
+          ><span class="brand-mark">S</span
+          ><span
+            ><strong>SafeNotify</strong><small>ADMIN CONSOLE</small></span
+          ></a
+        >
+        <div class="org-label" id="orgLabel">Your organisation</div>
+        <nav id="nav">
+          <button data-page="overview" class="active">Overview</button
+          ><button data-page="send">Send alert</button
+          ><button data-page="requests">
+            Device requests
+            <b id="requestBadge" class="badge hidden">0</b></button
+          ><button data-page="devices">Devices</button
+          ><button data-page="groups">Groups</button
+          ><button data-page="history">Alert history</button
+          ><button data-page="audit">Audit log</button
+          ><button data-page="settings">Settings</button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="online-dot"></span>Local server online<button
+            id="logout"
+            class="text-button"
+          >
+            Sign out
+          </button>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">SAFENOTIFY / ADMIN</span>
+            <h1 id="pageTitle">Overview</h1>
+          </div>
+          <div class="top-actions">
+            <span class="server-pill"
+              ><span class="online-dot"></span>Server healthy</span
+            >
+            <div id="adminEmail" class="avatar">A</div>
+          </div>
+        </header>
+        <div id="content" class="content"></div>
+      </main>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script src="/app.js" defer></script>
+  </body>
 </html>

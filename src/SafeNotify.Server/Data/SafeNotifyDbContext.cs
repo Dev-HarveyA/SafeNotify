@@ -14,8 +14,12 @@ public sealed class SafeNotifyDbContext(DbContextOptions<SafeNotifyDbContext> op
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var dateTimeOffsetConverter = new ValueConverter<DateTimeOffset, long>(value => value.UtcDateTime.Ticks, value => new DateTimeOffset(value, TimeSpan.Zero));
-        var nullableDateTimeOffsetConverter = new ValueConverter<DateTimeOffset?, long?>(value => value.HasValue ? value.Value.UtcDateTime.Ticks : null, value => value.HasValue ? new DateTimeOffset(value.Value, TimeSpan.Zero) : null);
+        var dateTimeOffsetConverter = new ValueConverter<DateTimeOffset, long>(
+            value => value.UtcDateTime.Ticks,
+            value => new DateTimeOffset(value, TimeSpan.Zero));
+        var nullableDateTimeOffsetConverter = new ValueConverter<DateTimeOffset?, long?>(
+            value => value.HasValue ? value.Value.UtcDateTime.Ticks : null,
+            value => value.HasValue ? new DateTimeOffset(value.Value, TimeSpan.Zero) : null);
         foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(entity => entity.GetProperties()))
         {
             if (property.ClrType == typeof(DateTimeOffset)) property.SetValueConverter(dateTimeOffsetConverter);
@@ -33,8 +37,21 @@ public sealed class SafeNotifyDbContext(DbContextOptions<SafeNotifyDbContext> op
         modelBuilder.Entity<Device>().HasOne(x => x.Group).WithMany().HasForeignKey(x => x.GroupId).OnDelete(DeleteBehavior.SetNull);
     }
 }
-public sealed class Organisation { public int Id { get; set; } public required string Name { get; set; } public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow; }
-public sealed class Administrator { public int Id { get; set; } public required string Email { get; set; } public required string PasswordHash { get; set; } public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow; }
+public sealed class Organisation
+{
+    public int Id { get; set; }
+    public required string Name { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class Administrator
+{
+    public int Id { get; set; }
+    public required string Email { get; set; }
+    public required string PasswordHash { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
 public sealed class Device
 {
     public int Id { get; set; }
@@ -61,7 +78,12 @@ public sealed class JoinRequest
     public int? DecidedById { get; set; }
     public int? DeviceId { get; set; }
 }
-public sealed class DeviceGroup { public int Id { get; set; } public required string Name { get; set; } public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow; }
+public sealed class DeviceGroup
+{
+    public int Id { get; set; }
+    public required string Name { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
 public sealed class Alert
 {
     public int Id { get; set; }

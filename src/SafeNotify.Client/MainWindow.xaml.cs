@@ -1,10 +1,7 @@
-using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -15,10 +12,9 @@ namespace SafeNotify.Client;
 public partial class MainWindow : Window
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
-    private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("SafeNotify.DeviceState.v1");
     private readonly HashSet<int> visibleDeliveries = [];
     private readonly Queue<IncomingAlert> alertQueue = [];
-    private readonly string statePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SafeNotify", "device.dat");
+    private readonly ClientStateStore stateStore = new();
     private ClientState state = new();
     private AlertWindowGroup? activeAlertWindowGroup;
     private HubConnection? hub;
@@ -117,7 +113,8 @@ public partial class MainWindow : Window
         JoinButton.IsEnabled = false;
         try
         {
-            using var response = await Client.PostAsJsonAsync(new Uri(address, "/api/client/join"), new JoinInput(state.InstallationId, Environment.MachineName, state.ClaimToken));
+            var request = new JoinInput(state.InstallationId, Environment.MachineName, state.ClaimToken);
+            using var response = await Client.PostAsJsonAsync(new Uri(address, "/api/client/join"), request);
             if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.Conflict)
             {
                 var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
@@ -188,10 +185,14 @@ public partial class MainWindow : Window
                 state.RequestId = null;
                 state.ClaimToken = null;
                 SaveState();
-                await Dispatcher.InvokeAsync(() => SetStatus("Your request was rejected. Contact your administrator if you need access.", Colors.OrangeRed));
+                await Dispatcher.InvokeAsync(() =>
+                    SetStatus("Your request was rejected. Contact your administrator if you need access.", Colors.OrangeRed));
             }
         }
-        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException or UriFormatException) { }
+        catch (Exception exception) when (
+            exception is HttpRequestException or TaskCanceledException or InvalidOperationException or UriFormatException)
+        {
+        }
     }
 
     private void StartConnectionLoop()
@@ -231,7 +232,9 @@ public partial class MainWindow : Window
                     .WithAutomaticReconnect(new PersistentReconnectPolicy())
                     .Build();
                 hub = connection;
-                connection.On<IncomingAlert>("AlertReceived", alert => Dispatcher.InvokeAsync(() => DisplayAlert(alert with { Id = alert.DeliveryId })).Task.Unwrap());
+                connection.On<IncomingAlert>(
+                    "AlertReceived",
+                    alert => Dispatcher.InvokeAsync(() => DisplayAlert(alert with { Id = alert.DeliveryId })).Task.Unwrap());
                 connection.On("AccessRevoked", async () => await Dispatcher.InvokeAsync(async () =>
                 {
                     state.Credential = null;
@@ -242,13 +245,15 @@ public partial class MainWindow : Window
                     connectionLoopCancellation?.Cancel();
                     await connection.StopAsync();
                 }).Task.Unwrap());
-                connection.Reconnecting += _ => Dispatcher.InvokeAsync(() => SetStatus("Connection interrupted. Reconnecting automatically…", Colors.Goldenrod)).Task;
+                connection.Reconnecting += _ => Dispatcher.InvokeAsync(() =>
+                    SetStatus("Connection interrupted. Reconnecting automatically…", Colors.Goldenrod)).Task;
                 connection.Reconnected += async _ =>
                 {
                     await Dispatcher.InvokeAsync(() => SetStatus("Connected and approved. You can receive organisation alerts.", Colors.SeaGreen));
                     await PollAlertsAsync(cancellationToken);
                 };
-                connection.Closed += _ => Dispatcher.InvokeAsync(() => SetStatus("Server offline. SafeNotify is retrying automatically…", Colors.OrangeRed)).Task;
+                connection.Closed += _ => Dispatcher.InvokeAsync(() =>
+                    SetStatus("Server offline. SafeNotify is retrying automatically…", Colors.OrangeRed)).Task;
                 await connection.StartAsync(cancellationToken);
                 retryDelay = TimeSpan.FromSeconds(2);
                 JoinButton.IsEnabled = false;
@@ -343,10 +348,18 @@ public partial class MainWindow : Window
     private bool TryGetBaseAddress(out Uri address)
     {
         var text = ServerAddress.Text.Trim().TrimEnd('/');
-        if (Uri.TryCreate(text, UriKind.Absolute, out var candidate) && candidate.AbsolutePath == "/" && candidate.Query.Length == 0 && candidate.Fragment.Length == 0 && (candidate.Scheme == Uri.UriSchemeHttps || candidate.Scheme == Uri.UriSchemeHttp && candidate.IsLoopback))
+        if (Uri.TryCreate(text, UriKind.Absolute, out var candidate))
         {
-            address = candidate;
-            return true;
+            var isAllowedScheme = candidate.Scheme == Uri.UriSchemeHttps
+                || candidate.Scheme == Uri.UriSchemeHttp && candidate.IsLoopback;
+            if (candidate.AbsolutePath == "/"
+                && candidate.Query.Length == 0
+                && candidate.Fragment.Length == 0
+                && isAllowedScheme)
+            {
+                address = candidate;
+                return true;
+            }
         }
         address = new Uri("https://localhost");
         return false;
@@ -359,32 +372,11 @@ public partial class MainWindow : Window
         ConnectionDot.Fill = new SolidColorBrush(color);
     }
 
-    private ClientState LoadState()
-    {
-        try
-        {
-            if (!File.Exists(statePath)) return new ClientState();
-            var protectedBytes = File.ReadAllBytes(statePath);
-            var clearBytes = ProtectedData.Unprotect(protectedBytes, Entropy, DataProtectionScope.CurrentUser);
-            var loaded = JsonSerializer.Deserialize<ClientState>(clearBytes) ?? new ClientState();
-            ServerAddress.Text = loaded.ServerUrl ?? ServerAddress.Text;
-            return loaded;
-        }
-        catch (Exception exception) when (exception is IOException or CryptographicException or JsonException) { return new ClientState(); }
-    }
+    private ClientState LoadState() => stateStore.Load();
 
     private void SaveState()
     {
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(statePath)!);
-            var bytes = JsonSerializer.SerializeToUtf8Bytes(state);
-            File.WriteAllBytes(statePath, ProtectedData.Protect(bytes, Entropy, DataProtectionScope.CurrentUser));
-        }
-        catch (Exception exception) when (exception is IOException or CryptographicException or UnauthorizedAccessException)
-        {
-            SetStatus("Could not securely save this device's local registration.", Colors.OrangeRed);
-        }
+        if (!stateStore.Save(state)) SetStatus("Could not securely save this device's local registration.", Colors.OrangeRed);
     }
 
     private async void Window_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -397,28 +389,7 @@ public partial class MainWindow : Window
         connectionLoopCancellation?.Dispose();
     }
 
-    private sealed class ClientState
-    {
-        public string? ServerUrl { get; set; }
-        public string? InstallationId { get; set; }
-        public string? ClaimToken { get; set; }
-        public int? RequestId { get; set; }
-        public string? Credential { get; set; }
-        public int? DeviceId { get; set; }
-    }
 
-    private sealed record DiscoveryResponse(string Organisation, string ServerId);
-    private sealed record JoinInput(string InstallationId, string DeviceName, string ClaimToken);
-    private sealed record JoinResponse(int RequestId, string Status);
-    private sealed record JoinStatusResponse(string Status, string? Credential, int? DeviceId);
-    private sealed record ClaimStatusInput(string ClaimToken);
-    private sealed record IncomingAlert(int Id, int DeliveryId, int AlertId, string Title, string Message, string Severity, DateTimeOffset ExpiresAt, bool SpeakMessage = false);
-    private sealed record ErrorResponse(string Error);
-
-    private sealed class PersistentReconnectPolicy : IRetryPolicy
-    {
-        public TimeSpan? NextRetryDelay(RetryContext context) => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, Math.Min(context.PreviousRetryCount, 6))));
-    }
 }
 
 
