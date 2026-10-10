@@ -175,7 +175,7 @@ function updateAudienceTarget() {
 }
 async function submitAlert(event) {
   event.preventDefault();
-  const values = new FormData(event.currentTarget);
+  const values = new FormData(event.target);
   const severity = values.get("severity");
   const audience = values.get("audience");
   const target =
@@ -212,7 +212,7 @@ async function submitAlert(event) {
 }
 async function submitGroup(event) {
   event.preventDefault();
-  const name = new FormData(event.currentTarget).get("name");
+  const name = new FormData(event.target).get("name");
   try {
     await request("/api/admin/groups", {
       method: "POST",
@@ -226,7 +226,7 @@ async function submitGroup(event) {
 }
 async function submitOrganisation(event) {
   event.preventDefault();
-  const name = new FormData(event.currentTarget).get("name");
+  const name = new FormData(event.target).get("name");
   try {
     await request("/api/admin/settings/organisation", {
       method: "PUT",
