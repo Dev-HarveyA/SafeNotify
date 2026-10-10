@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#183d40" />
+    <meta name="color-scheme" content="light" />
+    <title>SafeNotify Client</title>
+    <link rel="manifest" href="/chromebook/manifest.webmanifest" />
+    <link rel="icon" href="/chromebook/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/chromebook/client.css?v=1" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand">
+        <div class="mark">S</div>
+        <div><strong>SafeNotify</strong><span>ORGANISATION CLIENT</span></div>
+        <span id="connection" class="connection">Not connected</span>
+      </header>
+      <section class="panel">
+        <p class="eyebrow">YOUR ORGANISATION</p>
+        <h1 id="organisation">Stay informed</h1>
+        <p id="status" class="status">Connect to your organisation to receive announcements and alerts.</p>
+        <form id="connect-form">
+          <label for="server">Server address</label>
+          <div class="address-row">
+            <input id="server" type="url" autocomplete="url" required />
+            <button type="submit">Find</button>
+          </div>
+        </form>
+        <div class="actions">
+          <button id="join" class="primary" type="button" hidden>Request to join</button>
+          <button id="notifications" class="secondary" type="button" hidden>Enable desktop alerts</button>
+        </div>
+        <p class="privacy">Only approved devices receive protected alerts. Keep this client open to receive alerts promptly.</p>
+      </section>
+      <footer>SafeNotify runs on your organisation's Windows server and local network.</footer>
+    </main>
+    <dialog id="alert-dialog" aria-labelledby="alert-title">
+      <article id="alert-card" class="alert-card">
+        <p id="alert-level" class="eyebrow">MESSAGE</p>
+        <h2 id="alert-title"></h2>
+        <p id="alert-message" class="alert-message"></p>
+        <button id="acknowledge" class="primary" type="button">Acknowledge</button>
+        <p id="ack-status" class="ack-status">Acknowledge to close this alert.</p>
+      </article>
+    </dialog>
+    <script src="/chromebook/client.js?v=1" defer></script>
+  </body>
+</html>

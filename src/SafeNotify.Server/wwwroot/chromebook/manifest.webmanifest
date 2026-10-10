@@ -1,0 +1,14 @@
+{
+  "id": "/chromebook/",
+  "name": "SafeNotify Organisation Client",
+  "short_name": "SafeNotify",
+  "description": "Receive announcements and alerts from your organisation's SafeNotify server.",
+  "start_url": "/chromebook/",
+  "scope": "/chromebook/",
+  "display": "standalone",
+  "background_color": "#f4f2ec",
+  "theme_color": "#183d40",
+  "icons": [
+    { "src": "/chromebook/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

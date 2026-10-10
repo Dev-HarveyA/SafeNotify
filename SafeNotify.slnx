@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/SafeNotify.Client/SafeNotify.Client.csproj" />
+    <Project Path="src/SafeNotify.Android/SafeNotify.Android.csproj" />
     <Project Path="src/SafeNotify.Server/SafeNotify.Server.csproj" />
   </Folder>
   <Folder Name="/tests/">

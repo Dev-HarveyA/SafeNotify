@@ -3,11 +3,13 @@
 ## Components
 
 ```text
-Windows WPF client ── HTTPS / SignalR ── ASP.NET Core server
-                                              ├── Admin dashboard
-                                              ├── Device registration API
-                                              ├── Alert and acknowledgement API
-                                              └── SQLite database
+Windows WPF client ───────── HTTPS / SignalR ─────┐
+Android client ───────────── HTTPS / REST polling ─┤
+Chromebook web client ─────── HTTPS / REST polling ─┴─ Windows ASP.NET Core server
+                                                           ├── Admin dashboard
+                                                           ├── Device registration API
+                                                           ├── Alert and acknowledgement API
+                                                           └── SQLite database
 ```
 
 The server hosts the static dashboard, REST endpoints, the SignalR device hub, and an expiry worker. The browser administrator interface authenticates with a secure cookie. The Windows client uses an installation ID and a random claim token to request membership. The server stores only a hash of the claim token. After approval it stores a protected copy of a random device credential and its hash; possession of the claim token allows the client to retrieve that credential after reconnecting.
@@ -31,7 +33,9 @@ SQLite timestamps are stored as UTC ticks so range comparisons and sorting remai
 
 ## Network boundaries
 
-The server binds only to `127.0.0.1:5080` by default. A non-loopback address requires a configured TLS certificate. LAN mode adds a firewall rule limited to the local subnet and requires the certificate to be trusted by client devices. Use an organisation-managed certificate and restrict firewall access to the organisation's device networks. The operator enters the server address in the client; discovery confirms the organisation name but does not grant access.
+The server binds only to `127.0.0.1:5080` by default. A non-loopback address requires a configured TLS certificate. LAN mode adds a firewall rule limited to the local subnet and requires the certificate to be trusted by client devices. The Android app imports the public LAN root into its own secure storage and validates the server certificate and address. ChromeOS must trust the certificate through its certificate settings before the Chromebook web client can connect. Use an organisation-managed certificate and restrict firewall access to the organisation's device networks. The operator enters the server address in the client; discovery confirms the organisation name but does not grant access.
+
+Every client uses the same join request, approval, device credential, alert delivery, and acknowledgement endpoints. The Windows client also uses SignalR. Android and Chromebook clients poll the alert API over HTTPS. Android maintains a visible foreground connection service while enabled. The Chromebook web app needs its browser window or installed app open because the local-only design does not use a remote push provider.
 
 ## Runtime files
 

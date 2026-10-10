@@ -4,9 +4,9 @@
 [![Latest release](https://img.shields.io/github/v/release/Dev-HarveyA/SafeNotify?label=latest%20release)](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**A self-hosted alert and messaging system for Windows schools and workplaces.** Administrators manage the organisation from a local dashboard. Approved Windows clients receive messages, warnings, and emergency alerts.
+**A self-hosted announcement and alert system for schools and workplaces.** The server and control desk run on Windows. Approved Windows, Android, and Chromebook clients receive organisation announcements and priority alerts over the local network.
 
-> SafeNotify is an early development project. It has not been certified or independently assessed for life-safety use. Do not use it instead of approved emergency procedures or certified alarm systems.
+> SafeNotify supports organisational announcements and alerts. It has not been certified or independently assessed for life-safety use. Follow approved emergency procedures and keep certified alarm systems in service.
 
 ## Screenshots
 
@@ -38,15 +38,16 @@ These examples show how message, warning, and emergency alerts appear on a recip
 
 ## Download
 
-### [Get the latest Windows installer](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
+### [Get the latest release](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
 
-Open the latest release, find **Assets**, and download `SafeNotify-Setup-x.y.z-win-x64.exe`. Run the installer and choose **Client and server**, **Client only**, or **Server only**.
+Open the latest release and find **Assets**. Download `SafeNotify-Setup-x.y.z-win-x64.exe` for Windows or `SafeNotify-Android-client.apk` for Android. The Windows installer lets you choose **Client and server**, **Client only**, or **Server only**. Install the Android APK with ADB as described below.
 
-If the installer is missing from Assets, check the [release workflow](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/release.yml). GitHub builds it when a version tag is pushed. Updates are installed by downloading and running the newer installer.
+The Chromebook client is served by the Windows server and installed from Chrome; it is not a separate release download. GitHub builds the Windows installer and Android APK when a version tag is pushed. If a release asset is missing, check the [release workflow](https://github.com/Dev-HarveyA/SafeNotify/actions/workflows/release.yml). Windows updates are installed by downloading and running the newer installer. To let Android users install updates without removing the app, configure the four Android signing secrets in the repository: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`. Without them, GitHub signs with its temporary runner key, which is suitable for installation but not repeat updates.
 
 ## What is included
 
 - A Windows alert client and self-hosted ASP.NET Core server with a web dashboard.
+- An Android client APK and an installable Chromebook web client that connect to the Windows server.
 - Administrator approval for devices, groups, and access to alerts.
 - Message, warning, and emergency alerts with acknowledgements and resolution tracking.
 - Optional text-to-speech for each alert.
@@ -75,6 +76,30 @@ The server listens only on the server computer by default. To allow approved cli
 4. In the client, use the HTTPS address shown in the dashboard, find the organisation, request to join, and have an administrator approve the device.
 
 Do not expose the dashboard to the internet. The certificate file is public, but never share the server's private key. For a workplace deployment, use a certificate issued by your organisation's certificate authority.
+
+## Android and Chromebook clients
+
+The server remains Windows-only. Android and Chromebook clients connect to the same server address and use the same device approval and alert records as Windows clients.
+
+### Android
+
+Download `SafeNotify-Android-client.apk` from the [latest release](https://github.com/Dev-HarveyA/SafeNotify/releases/latest). Enable USB debugging on the phone, connect it to a computer with Android SDK Platform Tools, then install it:
+
+```powershell
+adb install -r .\SafeNotify-Android-client.apk
+```
+
+To build the Android APK from source instead, install the .NET 10 Android workload and Android SDK, then run `dotnet publish .\src\SafeNotify.Android\SafeNotify.Android.csproj --configuration Release -p:AndroidPackageFormat=apk`.
+
+Open SafeNotify, enter the HTTPS address from the server dashboard, and select **Import server certificate** to choose the public `SafeNotify-LAN.cer` file. Find the organisation and request access. An administrator approves the device from **Device requests**. Allow notifications and leave SafeNotify connected; Android shows an ongoing connection notification while it checks for alerts.
+
+Android may restrict network activity because of battery settings, device power management, or a user force-stopping the app. This APK is currently built for manual installation with ADB. Google Play distribution would require a separate review of its persistent background service and signing setup.
+
+### Chromebook
+
+On the Chromebook, trust the public `SafeNotify-LAN.cer` certificate in ChromeOS certificate settings, then open `https://<server-address>:5080/chromebook/`. Use the HTTPS address shown by the dashboard. In Chrome, install SafeNotify from the install icon in the address bar or the browser menu. Find the organisation, request access, and have an administrator approve the device.
+
+The Chromebook client is a web app served by the Windows server. Keep its browser window or installed app open while connected to receive local network alerts. It does not use an internet push service, so alerts are not delivered after the browser app is closed or suspended.
 
 ## Data, backups, and uninstall
 
@@ -120,6 +145,8 @@ dotnet test .\SafeNotify.slnx --configuration Release
 | --- | --- |
 | `src/SafeNotify.Server` | Server, dashboard, API, and SQLite data model |
 | `src/SafeNotify.Client` | Windows client and alert windows |
+| `src/SafeNotify.Android` | Android client and local-network alert service |
+| `src/SafeNotify.Server/wwwroot/chromebook` | Installable Chromebook client |
 | `tests/SafeNotify.Server.Tests` | Server workflow tests |
 | `scripts` | Development launch, migration, publishing, and installer scripts |
 | `config` | Example server configuration |

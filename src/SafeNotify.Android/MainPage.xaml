@@ -1,0 +1,44 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SafeNotify.Android.MainPage"
+             Title="SafeNotify"
+             BackgroundColor="{StaticResource Paper}">
+    <ScrollView>
+        <VerticalStackLayout Padding="24,36" Spacing="20" MaximumWidthRequest="560" HorizontalOptions="Center">
+            <HorizontalStackLayout Spacing="14" VerticalOptions="Center">
+                <Border BackgroundColor="#E8A33B" StrokeThickness="0" StrokeShape="RoundRectangle 8" Padding="13,8">
+                    <Label Text="S" FontSize="23" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
+                </Border>
+                <VerticalStackLayout Spacing="1">
+                    <Label Text="SafeNotify" FontSize="25" FontAttributes="Bold" />
+                    <Label Text="ORGANISATION ALERTS" FontSize="11" CharacterSpacing="1.4" TextColor="{StaticResource Muted}" />
+                </VerticalStackLayout>
+            </HorizontalStackLayout>
+            <Border BackgroundColor="White" Stroke="#D5DEDA" StrokeShape="RoundRectangle 5" Padding="20">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Connect to your organisation" FontSize="21" FontAttributes="Bold" />
+                    <Label Text="Enter the HTTPS address supplied by your SafeNotify administrator."
+                           TextColor="{StaticResource Muted}" />
+                    <Entry x:Name="ServerAddress"
+                           Placeholder="https://192.168.1.20:5080"
+                           Keyboard="Url"
+                           ClearButtonVisibility="WhileEditing" />
+                    <Button x:Name="FindButton" Text="Find organisation" Clicked="FindClicked" />
+                    <Label x:Name="OrganisationName" FontSize="17" FontAttributes="Bold" />
+                    <Label x:Name="StatusText"
+                           Text="Enter the server address to get started."
+                           TextColor="{StaticResource Muted}" />
+                    <Button x:Name="JoinButton" Text="Request to join" Clicked="JoinClicked" IsVisible="False" />
+                    <Button x:Name="CertificateButton"
+                            Text="Import server certificate"
+                            BackgroundColor="#E9EFEC"
+                            TextColor="{StaticResource Ink}"
+                            Clicked="ImportCertificateClicked" />
+                    <Label Text="Only approved devices receive protected alerts. Keep this app open and connected for timely delivery."
+                           FontSize="12"
+                           TextColor="{StaticResource Muted}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
