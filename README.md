@@ -8,6 +8,12 @@
 
 > SafeNotify is an early development project. It has not been certified or independently assessed for life-safety use. Do not use it instead of approved emergency procedures or certified alarm systems.
 
+## Screenshots
+
+| Admin dashboard | Alert composer |
+| --- | --- |
+| ![SafeNotify admin dashboard showing device status and recent alerts](docs/images/safenotify-dashboard.png) | ![SafeNotify alert composer with a warning preview and text-to-speech enabled](docs/images/safenotify-alert-composer.png) |
+
 ## Download
 
 ### [Get the latest Windows installer](https://github.com/Dev-HarveyA/SafeNotify/releases/latest)
