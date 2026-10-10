@@ -36,6 +36,14 @@ public static class ClientEndpoints
             var credential = device?.ProtectedCredential is null ? null : protection.CreateProtector("SafeNotify.DeviceCredential").Unprotect(device.ProtectedCredential);
             return Results.Ok(new { status = request.Status, credential, deviceId = device?.Id });
         }).RequireRateLimiting("public");
+        app.MapGet("/api/client/session", async (HttpContext context, SafeNotifyDbContext db) =>
+        {
+            var device = await Authenticate(context, db);
+            if (device is null) return Results.Unauthorized();
+            device.LastSeenAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync();
+            return Results.Ok(new { deviceId = device.Id });
+        });
         app.MapGet("/api/client/alerts", async (HttpContext context, SafeNotifyDbContext db) =>
         {
             var device = await Authenticate(context, db);

@@ -37,7 +37,7 @@ public partial class MainWindow : Window
         if (!string.IsNullOrWhiteSpace(state.ServerUrl)) ServerAddress.Text = state.ServerUrl;
         if (!string.IsNullOrWhiteSpace(state.Credential))
         {
-            StartConnectionLoop();
+            await DiscoverAsync();
             return;
         }
         if (state.RequestId is not null && !string.IsNullOrWhiteSpace(state.ClaimToken))
@@ -87,12 +87,32 @@ public partial class MainWindow : Window
                 JoinButton.IsEnabled = false;
                 return;
             }
+            if (!string.IsNullOrWhiteSpace(state.Credential))
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(address, "/api/client/session"));
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", state.Credential);
+                using var sessionResponse = await Client.SendAsync(request);
+                if (sessionResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    await ClearInvalidCredentialAsync();
+                }
+                else if (!sessionResponse.IsSuccessStatusCode)
+                {
+                    SetStatus("The organisation system responded, but the device status could not be checked. Try again.", Colors.OrangeRed);
+                    JoinButton.IsEnabled = false;
+                    return;
+                }
+            }
             var result = await response.Content.ReadFromJsonAsync<DiscoveryResponse>();
             state.ServerUrl = address.ToString().TrimEnd('/');
             SaveState();
             OrganisationName.Text = result?.Organisation ?? "Organisation system found.";
             SetStatus("Organisation system found. You can request access.", Colors.SeaGreen);
             JoinButton.IsEnabled = !requestPending && string.IsNullOrWhiteSpace(state.Credential);
+            if (string.IsNullOrWhiteSpace(state.Credential) && !requestPending)
+                SetStatus("Organisation system found. You can request access.", Colors.SeaGreen);
+            else if (!string.IsNullOrWhiteSpace(state.Credential))
+                SetStatus("Connected and approved. You can receive organisation alerts.", Colors.SeaGreen);
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
         {
@@ -237,11 +257,7 @@ public partial class MainWindow : Window
                     alert => Dispatcher.InvokeAsync(() => DisplayAlert(alert with { Id = alert.DeliveryId })).Task.Unwrap());
                 connection.On("AccessRevoked", async () => await Dispatcher.InvokeAsync(async () =>
                 {
-                    state.Credential = null;
-                    state.DeviceId = null;
-                    SaveState();
-                    SetStatus("Device access has been revoked. Contact your administrator.", Colors.OrangeRed);
-                    JoinButton.IsEnabled = false;
+                    await ClearInvalidCredentialAsync();
                     connectionLoopCancellation?.Cancel();
                     await connection.StopAsync();
                 }).Task.Unwrap());
@@ -284,12 +300,32 @@ public partial class MainWindow : Window
             using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(address, "/api/client/alerts"));
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", state.Credential);
             using var response = await Client.SendAsync(request, cancellationToken);
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                await Dispatcher.InvokeAsync(ClearInvalidCredentialAsync);
+                connectionLoopCancellation?.Cancel();
+                return;
+            }
             if (!response.IsSuccessStatusCode) return;
             var alerts = await response.Content.ReadFromJsonAsync<List<IncomingAlert>>();
             if (alerts is null) return;
             foreach (var alert in alerts) await DisplayAlert(alert);
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException) { }
+    }
+
+    private Task ClearInvalidCredentialAsync()
+    {
+        state.Credential = null;
+        state.DeviceId = null;
+        SaveState();
+        requestPending = false;
+        state.RequestId = null;
+        state.ClaimToken = null;
+        SaveState();
+        JoinButton.IsEnabled = true;
+        SetStatus("This device is no longer registered. Request to join again for administrator approval.", Colors.OrangeRed);
+        return Task.CompletedTask;
     }
     private int activeDeliveryId;
     private bool isEmergency;
