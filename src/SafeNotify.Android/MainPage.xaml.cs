@@ -25,8 +25,31 @@ public partial class MainPage : ContentPage
         MobileAlertEvents.AccessRevoked += AccessWasRevoked;
     }
 
+    private void UpdateOverlayPermission()
+    {
+        var allowed = AndroidAlertOverlay.CanShow(global::Android.App.Application.Context);
+        OverlayPermissionStatus.IsVisible = !allowed;
+        OverlayPermissionButton.IsVisible = !allowed;
+    }
+
+    private async void EnableOverlayPermissionClicked(object? sender, EventArgs e)
+    {
+        var openSettings = await DisplayAlertAsync(
+            "Allow pop-up alerts",
+            "SafeNotify needs permission to show an alert over the app you are using. Android will ask you to allow display over other apps.",
+            "Open settings",
+            "Not now");
+        if (!openSettings) return;
+        var intent = new global::Android.Content.Intent(
+            global::Android.Provider.Settings.ActionManageOverlayPermission,
+            global::Android.Net.Uri.Parse($"package:{AppInfo.PackageName}"));
+        intent.AddFlags(global::Android.Content.ActivityFlags.NewTask);
+        global::Android.App.Application.Context.StartActivity(intent);
+    }
+
     private async void LoadClientAsync(object? sender, EventArgs e)
     {
+        UpdateOverlayPermission();
         state = await MobileClient.LoadStateAsync();
         rootCertificate = await MobileClient.LoadRootAsync();
         if (!string.IsNullOrWhiteSpace(state.ServerUrl)) ServerAddress.Text = state.ServerUrl;
@@ -39,6 +62,7 @@ public partial class MainPage : ContentPage
 
     private async void PageAppearing(object? sender, EventArgs e)
     {
+        UpdateOverlayPermission();
         if (!requestPending) return;
         PagePollingTimer();
         await PollOnceAsync();

@@ -12,6 +12,7 @@
     <ApplicationDisplayVersion>1.0.6</ApplicationDisplayVersion>
     <ApplicationVersion>6</ApplicationVersion>
     <SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />

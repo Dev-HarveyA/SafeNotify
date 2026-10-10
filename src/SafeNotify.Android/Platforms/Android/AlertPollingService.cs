@@ -92,7 +92,8 @@ public static class AndroidAlertNotifications
             emergencyPlayer?.Release();
             var player = new MediaPlayer();
             emergencyPlayer = player;
-            var alarm = RingtoneManager.GetDefaultUri(RingtoneType.Alarm);
+            var alarm = global::Android.Net.Uri.Parse(
+                $"android.resource://{context.PackageName}/{Resource.Raw.safenotify_emergency_tone}");
             if (alarm is null) return;
             var builder = new AudioAttributes.Builder();
             builder.SetUsage(AudioUsageKind.Alarm);
@@ -184,8 +185,12 @@ public sealed class AlertPollingService : Service
                         else
                         {
                             if (!postedAlerts.Add(alert.Id)) continue;
+                            await client.MarkDeliveredAsync(alert.Id);
                             PlayBackgroundSound(alert.Severity);
-                            AndroidAlertNotifications.Post(this, alert);
+                            if (AndroidAlertOverlay.CanShow(this))
+                                AndroidAlertOverlay.Show(this, alert, () => AcknowledgeAsync(alert.Id));
+                            else
+                                AndroidAlertNotifications.Post(this, alert);
                             if (alert.SpeakMessage) await SpeakAlertAsync(alert);
                         }
                     }
@@ -231,6 +236,14 @@ public sealed class AlertPollingService : Service
         }
         var ringtone = RingtoneManager.GetRingtone(this, RingtoneManager.GetDefaultUri(RingtoneType.Notification));
         ringtone?.Play();
+    }
+
+    private async Task<bool> AcknowledgeAsync(int alertId)
+    {
+        var state = await MobileClient.LoadStateAsync();
+        var root = await MobileClient.LoadRootAsync();
+        using var client = new MobileClient(state, root);
+        return await client.AcknowledgeAsync(alertId);
     }
 
     private static async Task SpeakAlertAsync(MobileAlert alert)

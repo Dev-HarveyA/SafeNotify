@@ -29,6 +29,17 @@
                            Text="Enter the server address to get started."
                            TextColor="{StaticResource Muted}" />
                     <Button x:Name="JoinButton" Text="Request to join" Clicked="JoinClicked" IsVisible="False" />
+                    <Label x:Name="OverlayPermissionStatus"
+                           Text="Allow pop-up alerts over other apps for alerts to appear while you use your phone."
+                           FontSize="13"
+                           TextColor="{StaticResource Muted}"
+                           IsVisible="False" />
+                    <Button x:Name="OverlayPermissionButton"
+                            Text="Enable pop-up alerts"
+                            BackgroundColor="#E9EFEC"
+                            TextColor="{StaticResource Ink}"
+                            Clicked="EnableOverlayPermissionClicked"
+                            IsVisible="False" />
                     <Button x:Name="CertificateButton"
                             Text="Import server certificate"
                             BackgroundColor="#E9EFEC"

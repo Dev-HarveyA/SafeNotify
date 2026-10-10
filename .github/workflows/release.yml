@@ -43,7 +43,7 @@ jobs:
                 "-p:AndroidSigningKeyPass=$env:ANDROID_KEY_PASSWORD"
               )
             }
-            dotnet publish src/SafeNotify.Android/SafeNotify.Android.csproj --configuration Release -p:AndroidPackageFormat=apk "-p:ApplicationDisplayVersion=$version" "-p:ApplicationVersion=$versionCode" @arguments
+            dotnet publish src/SafeNotify.Android/SafeNotify.Android.csproj --configuration Release -p:AndroidPackageFormat=apk -p:EmbedAssembliesIntoApk=true "-p:ApplicationDisplayVersion=$version" "-p:ApplicationVersion=$versionCode" @arguments
             if ($LASTEXITCODE -ne 0) { throw 'Android APK build failed.' }
           }
           finally {
