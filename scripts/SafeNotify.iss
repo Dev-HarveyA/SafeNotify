@@ -153,7 +153,7 @@ begin
     Exit;
 
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM SafeNotify.Server.exe', '', SW_HIDE, ewWaitUntilTerminated, ExitCode);
-  if not DelTree(ExistingServerDataDirectory, '', True, True) and DirExists(ExistingServerDataDirectory) then
+  if not DelTree(ExistingServerDataDirectory, True, True, True) and DirExists(ExistingServerDataDirectory) then
     RaiseException('SafeNotify could not replace the existing server data. Close the server and try again.');
 end;
 
