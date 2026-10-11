@@ -17,7 +17,10 @@ public static class AndroidAlertNotifications
 {
     public const string ChannelId = "safenotify-alerts";
     private const string ServiceChannelId = "safenotify-connection";
+    private static readonly object PlaybackLock = new();
     private static MediaPlayer? emergencyPlayer;
+    private static MediaPlayer? messagePlayer;
+    private static ToneGenerator? warningGenerator;
 
     public static void CreateChannels(Context context)
     {
@@ -46,12 +49,8 @@ public static class AndroidAlertNotifications
     public static void Post(Context context, MobileAlert alert)
     {
         var activityIntent = new Intent(context, typeof(MainActivity));
-        activityIntent.AddFlags(
-            ActivityFlags.ClearTop | ActivityFlags.SingleTop);
-        var pending = PendingIntent.GetActivity(
-            context,
-            alert.Id,
-            activityIntent,
+        activityIntent.AddFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
+        var pending = PendingIntent.GetActivity(context, alert.Id, activityIntent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
         var notification = new Notification.Builder(context, ChannelId)
             .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
@@ -72,50 +71,153 @@ public static class AndroidAlertNotifications
         ((NotificationManager)context.GetSystemService(Context.NotificationService)!).Notify(1901, Connection(context));
     }
 
+    public static void PlayAlertSound(Context context, string severity)
+    {
+        if (severity.Equals("emergency", StringComparison.OrdinalIgnoreCase))
+        {
+            StartEmergencySound(context);
+            return;
+        }
+
+        if (severity.Equals("warning", StringComparison.OrdinalIgnoreCase))
+        {
+            PlayWarningSound();
+            return;
+        }
+
+        PlayMessageSound(context);
+    }
+
     public static void StopEmergencySound()
     {
-        ReleaseEmergencySound();
-    }
-
-    public static void ReleaseEmergencySound()
-    {
-        emergencyPlayer?.Stop();
-        emergencyPlayer?.Release();
-        emergencyPlayer = null;
-    }
-
-    public static void StartEmergencySound(Context context)
-    {
-        if (emergencyPlayer?.IsPlaying == true) return;
-        try
+        lock (PlaybackLock)
         {
-            emergencyPlayer?.Release();
-            var player = new MediaPlayer();
-            emergencyPlayer = player;
-            var alarm = global::Android.Net.Uri.Parse(
-                $"android.resource://{context.PackageName}/{Resource.Raw.safenotify_emergency_tone}");
-            if (alarm is null) return;
-            var builder = new AudioAttributes.Builder();
-            builder.SetUsage(AudioUsageKind.Alarm);
-            builder.SetContentType(AudioContentType.Sonification);
-            var attributes = builder.Build();
-            if (attributes is null) return;
-            player.SetAudioAttributes(attributes);
-            player.SetDataSource(context, alarm);
-            player.Looping = true;
-            player.Prepare();
-            player.Start();
-        }
-        catch
-        {
+            try { emergencyPlayer?.Stop(); }
+            catch { }
             emergencyPlayer?.Release();
             emergencyPlayer = null;
         }
     }
 
+    public static void ReleaseEmergencySound()
+    {
+        StopEmergencySound();
+        lock (PlaybackLock)
+        {
+            warningGenerator?.Release();
+            warningGenerator = null;
+            if (messagePlayer is null) return;
+            try { messagePlayer.Stop(); }
+            catch { }
+            messagePlayer.Release();
+            messagePlayer = null;
+        }
+    }
+
+    public static void StartEmergencySound(Context context)
+    {
+        lock (PlaybackLock)
+        {
+            if (emergencyPlayer?.IsPlaying == true) return;
+            try
+            {
+                emergencyPlayer?.Release();
+                var player = new MediaPlayer();
+                emergencyPlayer = player;
+                var alarm = global::Android.Net.Uri.Parse(
+                    $"android.resource://{context.PackageName}/{Resource.Raw.safenotify_emergency_tone}");
+                if (alarm is null) return;
+                var attributes = new AudioAttributes.Builder()
+                    .SetUsage(AudioUsageKind.Alarm)
+                    .SetContentType(AudioContentType.Sonification)
+                    .Build() ?? throw new InvalidOperationException();
+                player.SetAudioAttributes(attributes);
+                player.SetDataSource(context, alarm);
+                player.Looping = true;
+                player.Prepare();
+                player.Start();
+            }
+            catch
+            {
+                emergencyPlayer?.Release();
+                emergencyPlayer = null;
+            }
+        }
+    }
+
     public static void SetEmergencyVolume(float volume)
     {
-        emergencyPlayer?.SetVolume(volume, volume);
+        lock (PlaybackLock) emergencyPlayer?.SetVolume(volume, volume);
+    }
+
+    private static void PlayMessageSound(Context context)
+    {
+        lock (PlaybackLock)
+        {
+            try
+            {
+                if (messagePlayer is not null)
+                {
+                    try { messagePlayer.Stop(); }
+                    catch { }
+                    messagePlayer.Release();
+                }
+
+                var player = new MediaPlayer();
+                messagePlayer = player;
+                var sound = RingtoneManager.GetDefaultUri(RingtoneType.Notification)!;
+                var attributes = new AudioAttributes.Builder()
+                    .SetUsage(AudioUsageKind.Alarm)
+                    .SetContentType(AudioContentType.Sonification)
+                    .Build() ?? throw new InvalidOperationException();
+                player.SetAudioAttributes(attributes);
+                player.SetDataSource(context, sound);
+                player.Completion += (_, _) => ReleaseMessageSound(player);
+                player.Error += (_, _) => ReleaseMessageSound(player);
+                player.Prepare();
+                player.Start();
+            }
+            catch
+            {
+                ReleaseMessageSound(messagePlayer);
+            }
+        }
+    }
+
+    private static void PlayWarningSound()
+    {
+        lock (PlaybackLock)
+        {
+            warningGenerator?.Release();
+            warningGenerator = new ToneGenerator(global::Android.Media.Stream.Alarm, 90);
+            var generator = warningGenerator ?? throw new InvalidOperationException();
+            _ = Task.Run(async () =>
+            {
+                for (var index = 0; index < 3; index++)
+                {
+                    generator.StartTone(Tone.PropBeep, 180);
+                    await Task.Delay(260);
+                }
+
+                lock (PlaybackLock)
+                {
+                    if (!ReferenceEquals(warningGenerator, generator)) return;
+                    generator.Release();
+                    warningGenerator = null;
+                }
+            });
+        }
+    }
+
+    private static void ReleaseMessageSound(MediaPlayer? player)
+    {
+        if (player is null) return;
+        lock (PlaybackLock)
+        {
+            if (!ReferenceEquals(messagePlayer, player)) return;
+            messagePlayer = null;
+            player.Release();
+        }
     }
 }
 
@@ -126,7 +228,6 @@ public static class AndroidAlertNotifications
 public sealed class AlertPollingService : Service
 {
     private readonly HashSet<int> postedAlerts = [];
-    private readonly HashSet<int> foregroundAlerts = [];
     private CancellationTokenSource? cancellation;
 
     public override IBinder? OnBind(Intent? intent) => null;
@@ -167,32 +268,24 @@ public sealed class AlertPollingService : Service
                 {
                     using var pendingClient = new MobileClient(state, root);
                     if (await pendingClient.CheckApprovalAsync())
-                    {
                         AndroidAlertNotifications.UpdateConnection(this);
-                    }
                 }
                 if (state.Credential is not null)
                 {
                     using var client = new MobileClient(state, root);
                     foreach (var alert in await client.GetAlertsAsync())
                     {
-                        if (alert.ExpiresAt <= DateTimeOffset.UtcNow) continue;
-                        if (MainActivity.IsForeground)
-                        {
-                            if (!foregroundAlerts.Add(alert.Id)) continue;
-                            MobileAlertEvents.Publish(alert);
-                        }
+                        if (alert.ExpiresAt <= DateTimeOffset.UtcNow || !postedAlerts.Add(alert.Id)) continue;
+                        await client.MarkDeliveredAsync(alert.Id);
+                        AndroidAlertNotifications.PlayAlertSound(this, alert.Severity);
+                        if (AndroidAlertOverlay.CanShow(this))
+                            AndroidAlertOverlay.Show(this, alert, () => AcknowledgeAsync(alert.Id));
                         else
                         {
-                            if (!postedAlerts.Add(alert.Id)) continue;
-                            await client.MarkDeliveredAsync(alert.Id);
-                            PlayBackgroundSound(alert.Severity);
-                            if (AndroidAlertOverlay.CanShow(this))
-                                AndroidAlertOverlay.Show(this, alert, () => AcknowledgeAsync(alert.Id));
-                            else
-                                AndroidAlertNotifications.Post(this, alert);
-                            if (alert.SpeakMessage) await SpeakAlertAsync(alert);
+                            AndroidAlertNotifications.Post(this, alert);
+                            MobileAlertEvents.Publish(alert);
                         }
+                        if (alert.SpeakMessage) await SpeakAlertAsync(alert);
                     }
                 }
             }
@@ -209,33 +302,10 @@ public sealed class AlertPollingService : Service
             catch
             {
             }
+
             try { await Task.Delay(TimeSpan.FromSeconds(8), cancellationToken); }
             catch (System.OperationCanceledException) { return; }
         }
-    }
-
-    private void PlayBackgroundSound(string severity)
-    {
-        if (severity.Equals("emergency", StringComparison.OrdinalIgnoreCase))
-        {
-            AndroidAlertNotifications.StartEmergencySound(this);
-            return;
-        }
-        if (severity.Equals("warning", StringComparison.OrdinalIgnoreCase))
-        {
-            _ = Task.Run(async () =>
-            {
-                using var generator = new ToneGenerator(global::Android.Media.Stream.Notification, 90);
-                for (var index = 0; index < 3; index++)
-                {
-                    generator.StartTone(Tone.PropBeep, 120);
-                    await Task.Delay(200);
-                }
-            });
-            return;
-        }
-        var ringtone = RingtoneManager.GetRingtone(this, RingtoneManager.GetDefaultUri(RingtoneType.Notification));
-        ringtone?.Play();
     }
 
     private async Task<bool> AcknowledgeAsync(int alertId)
